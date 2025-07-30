@@ -3,10 +3,12 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const [formData, setFormData] = useState({
+    name: '',
     email: '',
-    password: ''
+    password: '',
+    confirmPassword: ''
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -16,20 +18,40 @@ export default function LoginPage() {
     setLoading(true);
     setMessage('');
 
+    // Şifre kontrolü
+    if (formData.password !== formData.confirmPassword) {
+      setMessage('Şifreler eşleşmiyor');
+      setLoading(false);
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setMessage('Şifre en az 6 karakter olmalıdır');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const response = await fetch('/api/login', {
+      const response = await fetch('/api/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password
+        }),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        setMessage('Giriş başarılı! Yönlendiriliyorsunuz...');
-        // Burada kullanıcıyı ana sayfaya yönlendirebilirsin
+        setMessage('Kayıt başarılı! Giriş sayfasına yönlendiriliyorsunuz...');
+        // 2 saniye sonra login sayfasına yönlendir
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 2000);
       } else {
         setMessage(data.message);
       }
@@ -53,16 +75,33 @@ export default function LoginPage() {
         {/* Logo/Header */}
         <div className="text-center">
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
-            Hoş Geldiniz
+            Hesap Oluşturun
           </h2>
           <p className="text-gray-600">
-            Hesabınıza giriş yapın
+            Yeni hesabınızı oluşturun
           </p>
         </div>
 
-        {/* Login Form */}
+        {/* Register Form */}
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <form className="space-y-6" onSubmit={handleSubmit}>
+            {/* Name Field */}
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                Ad Soyad
+              </label>
+              <input
+                id="name"
+                name="name"
+                type="text"
+                required
+                value={formData.name}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 outline-none"
+                placeholder="Adınız ve soyadınız"
+              />
+            </div>
+
             {/* Email Field */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
@@ -93,7 +132,24 @@ export default function LoginPage() {
                 value={formData.password}
                 onChange={handleChange}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 outline-none"
-                placeholder="••••••••"
+                placeholder="En az 6 karakter"
+              />
+            </div>
+
+            {/* Confirm Password Field */}
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                Şifre Tekrar
+              </label>
+              <input
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                required
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 outline-none"
+                placeholder="Şifrenizi tekrar girin"
               />
             </div>
 
@@ -114,16 +170,16 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
+              {loading ? 'Kayıt yapılıyor...' : 'Kayıt Ol'}
             </button>
           </form>
 
-          {/* Register Link */}
+          {/* Login Link */}
           <div className="mt-6 text-center">
             <p className="text-gray-600">
-              Hesabınız yok mu?{' '}
-              <Link href="/register" className="text-blue-600 hover:text-blue-700 font-medium transition duration-200">
-                Kayıt olun
+              Zaten hesabınız var mı?{' '}
+              <Link href="/login" className="text-blue-600 hover:text-blue-700 font-medium transition duration-200">
+                Giriş yapın
               </Link>
             </p>
           </div>
@@ -136,4 +192,4 @@ export default function LoginPage() {
       </div>
     </div>
   );
-}
+} 
