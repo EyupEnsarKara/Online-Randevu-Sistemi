@@ -2,8 +2,10 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -29,7 +31,7 @@ export default function LoginPage() {
 
       if (data.success) {
         setMessage('Giriş başarılı! Yönlendiriliyorsunuz...');
-        // Burada kullanıcıyı ana sayfaya yönlendirebilirsin
+        router.push('/test-sqlite');
       } else {
         setMessage(data.message);
       }

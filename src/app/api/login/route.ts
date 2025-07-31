@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { openDb } from '@/lib/sqlite.js';
 import bcrypt from 'bcrypt';
+import { getJwtSecretKey } from "@/lib/auth";
+import { SignJWT } from "jose";
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,10 +16,10 @@ export async function POST(request: NextRequest) {
     }
 
     const db = await openDb();
-    
+
     // Kullanıcıyı email ile ara
     const user = await db.get('SELECT * FROM users WHERE email = ?', [email]);
-    
+
     if (!user) {
       await db.close();
       return NextResponse.json(
@@ -28,7 +30,9 @@ export async function POST(request: NextRequest) {
 
     // Şifreyi kontrol et
     const isPasswordValid = await bcrypt.compare(password, user.password);
-    
+
+
+
     if (!isPasswordValid) {
       await db.close();
       return NextResponse.json(
@@ -38,16 +42,29 @@ export async function POST(request: NextRequest) {
     }
 
     await db.close();
+    // JWT oluştur
+    // Kullanıcı bilgilerini JWT içinde sakla
+    const token = await new SignJWT({
+      email: user.email,
+      role: user.role
+    })
+      .setProtectedHeader({ alg: "HS256" })
+      .setIssuedAt()
+      .setExpirationTime("3600s")
+      .sign(getJwtSecretKey());
 
-    // Başarılı giriş - kullanıcı bilgilerini döndür (şifre hariç)
-    const { password: _, ...userWithoutPassword } = user;
-    
-    return NextResponse.json({
-      success: true,
-      message: 'Giriş başarılı',
-      user: userWithoutPassword
+    const response = NextResponse.json(
+      { success: true },
+      { status: 200, headers: { "content-type": "application/json" } }
+    );
+
+    response.cookies.set({
+      name: "token",
+      value: token,
+      path: "/",
     });
 
+    return response;
   } catch (error: any) {
     console.error('Login hatası:', error);
     return NextResponse.json(
