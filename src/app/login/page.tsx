@@ -26,12 +26,11 @@ export default function LoginPage() {
         },
         body: JSON.stringify(formData),
       });
-
       const data = await response.json();
-
+      console.log("data",data);
       if (data.success) {
         setMessage('Giriş başarılı! Yönlendiriliyorsunuz...');
-        router.push('/test-sqlite');
+        router.push('/api/test-sqlite');
       } else {
         setMessage(data.message);
       }
@@ -55,7 +54,7 @@ export default function LoginPage() {
         {/* Logo/Header */}
         <div className="text-center">
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
-            Hoş Geldiniz
+            Hoş Geldiniz.
           </h2>
           <p className="text-gray-600">
             Hesabınıza giriş yapın

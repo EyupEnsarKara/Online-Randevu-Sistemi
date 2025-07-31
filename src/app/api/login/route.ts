@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
 
     // Kullanıcıyı email ile ara
     const user = await db.get('SELECT * FROM users WHERE email = ?', [email]);
-
+    console.log("user",user);
     if (!user) {
       await db.close();
       return NextResponse.json(
@@ -44,9 +44,10 @@ export async function POST(request: NextRequest) {
     await db.close();
     // JWT oluştur
     // Kullanıcı bilgilerini JWT içinde sakla
+   
     const token = await new SignJWT({
       email: user.email,
-      role: user.role
+    
     })
       .setProtectedHeader({ alg: "HS256" })
       .setIssuedAt()
