@@ -4,7 +4,7 @@ import bcrypt from 'bcrypt';
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, email, password } = await request.json();
+    const { name, email, password, user_type } = await request.json();
 
     if (!name || !email || !password) {
       return NextResponse.json(
@@ -31,8 +31,8 @@ export async function POST(request: NextRequest) {
     
     // Yeni kullanıcıyı ekle
     const result = await db.run(
-      'INSERT INTO users (name, email, password) VALUES (?, ?, ?)',
-      [name, email, hashedPassword]
+      'INSERT INTO users (name, email, password, user_type) VALUES (?, ?, ?, ?)',
+      [name, email, hashedPassword, user_type || 'customer']
     );
 
     await db.close();

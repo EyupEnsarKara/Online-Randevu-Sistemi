@@ -30,7 +30,7 @@ export default function LoginPage() {
       console.log("data",data);
       if (data.success) {
         setMessage('Giriş başarılı! Yönlendiriliyorsunuz...');
-        router.push('/api/test-sqlite');
+        router.push('/');
       } else {
         setMessage(data.message);
       }

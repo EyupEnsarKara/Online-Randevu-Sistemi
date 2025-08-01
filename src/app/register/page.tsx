@@ -8,7 +8,8 @@ export default function RegisterPage() {
     name: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    userType: 'customer'
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -40,7 +41,8 @@ export default function RegisterPage() {
         body: JSON.stringify({
           name: formData.name,
           email: formData.email,
-          password: formData.password
+          password: formData.password,
+          user_type: formData.userType
         }),
       });
 
@@ -151,6 +153,23 @@ export default function RegisterPage() {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 outline-none"
                 placeholder="Şifrenizi tekrar girin"
               />
+            </div>
+
+            {/* User Type Field */}
+            <div>
+              <label htmlFor="userType" className="block text-sm font-medium text-gray-700 mb-2">
+                Hesap Türü
+              </label>
+              <select
+                id="userType"
+                name="userType"
+                value={formData.userType}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 outline-none"
+              >
+                <option value="customer">Müşteri</option>
+                <option value="business">İşletme</option>
+              </select>
             </div>
 
             {/* Message Display */}
