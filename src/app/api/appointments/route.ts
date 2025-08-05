@@ -129,11 +129,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // URL parametrelerini al
+    const { searchParams } = new URL(request.url);
+    const statusFilter = searchParams.get('status');
+
     let appointments;
 
     if (user.user_type === 'customer') {
       // Müşteri ise kendi randevularını getir
-      appointments = await db.all(`
+      let query = `
         SELECT 
           a.id,
           a.date,
@@ -147,8 +151,18 @@ export async function GET(request: NextRequest) {
         FROM appointments a
         JOIN businesses b ON a.business_id = b.id
         WHERE a.customer_id = ?
-        ORDER BY a.date DESC, a.time DESC
-      `, [user.id]);
+      `;
+      
+      const params = [user.id];
+      
+      if (statusFilter) {
+        query += ' AND a.status = ?';
+        params.push(statusFilter);
+      }
+      
+      query += ' ORDER BY a.date DESC, a.time DESC';
+      
+      appointments = await db.all(query, params);
     } else {
       // İşletme ise kendi işletmesine gelen randevuları getir
       const business = await db.get('SELECT id FROM businesses WHERE user_id = ?', [user.id]);
@@ -160,7 +174,7 @@ export async function GET(request: NextRequest) {
         });
       }
 
-      appointments = await db.all(`
+      let query = `
         SELECT 
           a.id,
           a.date,
@@ -173,8 +187,18 @@ export async function GET(request: NextRequest) {
         FROM appointments a
         JOIN users u ON a.customer_id = u.id
         WHERE a.business_id = ?
-        ORDER BY a.date DESC, a.time DESC
-      `, [business.id]);
+      `;
+      
+      const params = [business.id];
+      
+      if (statusFilter) {
+        query += ' AND a.status = ?';
+        params.push(statusFilter);
+      }
+      
+      query += ' ORDER BY a.date DESC, a.time DESC';
+      
+      appointments = await db.all(query, params);
     }
 
     await db.close();

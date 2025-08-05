@@ -24,6 +24,15 @@ export default function NewAppointmentPage() {
     notes: ''
   });
 
+  // URL'den işletme ID'sini al
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const businessId = urlParams.get('business');
+    if (businessId) {
+      setSelectedBusiness(Number(businessId));
+    }
+  }, []);
+
   // İşletmeleri yükle
   useEffect(() => {
     const loadBusinesses = async () => {
