@@ -4,6 +4,62 @@ import { getJwtSecretKey } from '@/lib/auth';
 import { jwtVerify } from 'jose';
 import bcrypt from 'bcrypt';
 
+// Kullanıcı profil bilgilerini getir
+export async function GET(request: NextRequest) {
+  try {
+    const token = request.cookies.get('token')?.value;
+
+    if (!token) {
+      return NextResponse.json(
+        { success: false, message: 'Giriş yapmanız gerekiyor' },
+        { status: 401 }
+      );
+    }
+
+    const { payload } = await jwtVerify(token, getJwtSecretKey());
+    const userEmail = payload.email as string;
+
+    const db = await openDb();
+    
+    // Kullanıcıyı bul
+    const user = await db.get(`
+      SELECT 
+        id,
+        name,
+        email,
+        user_type,
+        created_at
+      FROM users 
+      WHERE email = ?
+    `, [userEmail]);
+
+    await db.close();
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: 'Kullanıcı bulunamadı' },
+        { status: 404 }
+      );
+    }
+
+    // Şifre bilgisini çıkar
+    delete user.password;
+
+    return NextResponse.json({
+      success: true,
+      user: user
+    });
+
+  } catch (error: any) {
+    console.error('Profile fetch error:', error);
+    return NextResponse.json(
+      { success: false, message: 'Profil bilgileri yüklenirken hata oluştu' },
+      { status: 500 }
+    );
+  }
+}
+
+// Kullanıcı profil bilgilerini güncelle
 export async function PUT(request: NextRequest) {
   try {
     const token = request.cookies.get('token')?.value;
@@ -15,28 +71,21 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // JWT token'ı doğrula
     const { payload } = await jwtVerify(token, getJwtSecretKey());
     const userEmail = payload.email as string;
 
-    if (!userEmail) {
-      return NextResponse.json(
-        { success: false, message: 'Geçersiz token' },
-        { status: 401 }
-      );
-    }
+    const { name, currentPassword, newPassword } = await request.json();
 
-    const { name, email, currentPassword, newPassword } = await request.json();
-
-    if (!name || !email) {
+    // Validasyon
+    if (!name) {
       return NextResponse.json(
-        { success: false, message: 'Ad ve email gerekli' },
+        { success: false, message: 'Ad alanı gerekli' },
         { status: 400 }
       );
     }
 
     const db = await openDb();
-
+    
     // Kullanıcıyı bul
     const user = await db.get('SELECT id, password FROM users WHERE email = ?', [userEmail]);
     if (!user) {
@@ -47,19 +96,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Email değişikliği varsa, yeni email'in başka kullanıcı tarafından kullanılmadığını kontrol et
-    if (email !== userEmail) {
-      const existingUser = await db.get('SELECT id FROM users WHERE email = ? AND id != ?', [email, user.id]);
-      if (existingUser) {
-        await db.close();
-        return NextResponse.json(
-          { success: false, message: 'Bu email zaten kullanımda' },
-          { status: 409 }
-        );
-      }
-    }
-
-    // Şifre değişikliği varsa, mevcut şifreyi doğrula
+    // Şifre değişikliği varsa mevcut şifreyi kontrol et
     if (newPassword) {
       if (!currentPassword) {
         await db.close();
@@ -69,42 +106,44 @@ export async function PUT(request: NextRequest) {
         );
       }
 
-      const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
-      if (!isPasswordValid) {
+      const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+      if (!isCurrentPasswordValid) {
         await db.close();
         return NextResponse.json(
           { success: false, message: 'Mevcut şifre yanlış' },
           { status: 400 }
         );
       }
+
+      // Yeni şifreyi hash'le
+      const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+      
+      // Ad ve şifreyi güncelle
+      await db.run(`
+        UPDATE users 
+        SET name = ?, password = ?
+        WHERE id = ?
+      `, [name, hashedNewPassword, user.id]);
+    } else {
+      // Sadece adı güncelle
+      await db.run(`
+        UPDATE users 
+        SET name = ?
+        WHERE id = ?
+      `, [name, user.id]);
     }
-
-    // Kullanıcı bilgilerini güncelle
-    let updateQuery = 'UPDATE users SET name = ?, email = ?';
-    let updateParams = [name, email];
-
-    if (newPassword) {
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
-      updateQuery += ', password = ?';
-      updateParams.push(hashedPassword);
-    }
-
-    updateQuery += ' WHERE id = ?';
-    updateParams.push(user.id);
-
-    await db.run(updateQuery, updateParams);
 
     await db.close();
 
     return NextResponse.json({
       success: true,
-      message: 'Profil başarıyla güncellendi'
+      message: 'Profil bilgileri başarıyla güncellendi'
     });
 
   } catch (error: any) {
     console.error('Profile update error:', error);
     return NextResponse.json(
-      { success: false, message: 'Profil güncellenirken hata oluştu' },
+      { success: false, message: 'Profil bilgileri güncellenirken hata oluştu' },
       { status: 500 }
     );
   }

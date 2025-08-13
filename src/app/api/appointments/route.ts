@@ -132,6 +132,9 @@ export async function GET(request: NextRequest) {
     // URL parametrelerini al
     const { searchParams } = new URL(request.url);
     const statusFilter = searchParams.get('status');
+    const dateFilter = searchParams.get('date');
+    const limit = parseInt(searchParams.get('limit') || '20');
+    const offset = parseInt(searchParams.get('offset') || '0');
 
     let appointments;
 
@@ -160,7 +163,13 @@ export async function GET(request: NextRequest) {
         params.push(statusFilter);
       }
       
-      query += ' ORDER BY a.date DESC, a.time DESC';
+      if (dateFilter) {
+        query += ' AND a.date = ?';
+        params.push(dateFilter);
+      }
+      
+      query += ' ORDER BY a.date DESC, a.time DESC LIMIT ? OFFSET ?';
+      params.push(limit, offset);
       
       appointments = await db.all(query, params);
     } else {
@@ -196,16 +205,31 @@ export async function GET(request: NextRequest) {
         params.push(statusFilter);
       }
       
-      query += ' ORDER BY a.date DESC, a.time DESC';
+      if (dateFilter) {
+        query += ' AND a.date = ?';
+        params.push(dateFilter);
+      }
+      
+      query += ' ORDER BY a.date DESC, a.time DESC LIMIT ? OFFSET ?';
+      params.push(limit, offset);
       
       appointments = await db.all(query, params);
     }
 
     await db.close();
 
+    // Toplam sayıyı hesapla (sayfalama için)
+    const totalCount = appointments.length;
+
     return NextResponse.json({
       success: true,
-      appointments: appointments
+      appointments: appointments,
+      pagination: {
+        total: totalCount,
+        limit: limit,
+        offset: offset,
+        hasMore: offset + limit < totalCount
+      }
     });
 
   } catch (error: any) {

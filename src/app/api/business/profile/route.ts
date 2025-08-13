@@ -3,7 +3,7 @@ import { openDb } from '@/lib/sqlite';
 import { getJwtSecretKey } from '@/lib/auth';
 import { jwtVerify } from 'jose';
 
-// İşletme bilgilerini getir
+// İşletme profil bilgilerini getir
 export async function GET(request: NextRequest) {
   try {
     const token = request.cookies.get('token')?.value;
@@ -15,43 +15,33 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // JWT token'ı doğrula
     const { payload } = await jwtVerify(token, getJwtSecretKey());
     const userEmail = payload.email as string;
 
-    if (!userEmail) {
-      return NextResponse.json(
-        { success: false, message: 'Geçersiz token' },
-        { status: 401 }
-      );
-    }
-
     const db = await openDb();
-
-    // Kullanıcıyı bul
+    
+    // Kullanıcıyı ve işletmeyi bul
     const user = await db.get('SELECT id, user_type FROM users WHERE email = ?', [userEmail]);
-    if (!user) {
+    if (!user || user.user_type !== 'business') {
       await db.close();
       return NextResponse.json(
-        { success: false, message: 'Kullanıcı bulunamadı' },
-        { status: 404 }
-      );
-    }
-
-    // Sadece işletme kullanıcıları erişebilir
-    if (user.user_type !== 'business') {
-      await db.close();
-      return NextResponse.json(
-        { success: false, message: 'Bu sayfaya erişim yetkiniz yok' },
+        { success: false, message: 'İşletme hesabı bulunamadı' },
         { status: 403 }
       );
     }
 
-    // İşletme bilgilerini getir
     const business = await db.get(`
-      SELECT id, name, description, address, phone
-      FROM businesses 
-      WHERE user_id = ?
+      SELECT 
+        b.id,
+        b.name,
+        b.description,
+        b.address,
+        b.phone,
+        u.name as owner_name,
+        u.email as owner_email
+      FROM businesses b
+      JOIN users u ON b.user_id = u.id
+      WHERE b.user_id = ?
     `, [user.id]);
 
     await db.close();
@@ -77,7 +67,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// İşletme bilgilerini güncelle
+// İşletme profil bilgilerini güncelle
 export async function PUT(request: NextRequest) {
   try {
     const token = request.cookies.get('token')?.value;
@@ -89,16 +79,8 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // JWT token'ı doğrula
     const { payload } = await jwtVerify(token, getJwtSecretKey());
     const userEmail = payload.email as string;
-
-    if (!userEmail) {
-      return NextResponse.json(
-        { success: false, message: 'Geçersiz token' },
-        { status: 401 }
-      );
-    }
 
     const { name, description, address, phone } = await request.json();
 
@@ -111,41 +93,34 @@ export async function PUT(request: NextRequest) {
     }
 
     const db = await openDb();
-
-    // Kullanıcıyı bul
+    
+    // Kullanıcıyı ve işletmeyi bul
     const user = await db.get('SELECT id, user_type FROM users WHERE email = ?', [userEmail]);
-    if (!user) {
+    if (!user || user.user_type !== 'business') {
       await db.close();
       return NextResponse.json(
-        { success: false, message: 'Kullanıcı bulunamadı' },
-        { status: 404 }
-      );
-    }
-
-    // Sadece işletme kullanıcıları erişebilir
-    if (user.user_type !== 'business') {
-      await db.close();
-      return NextResponse.json(
-        { success: false, message: 'Bu işlemi gerçekleştirme yetkiniz yok' },
+        { success: false, message: 'İşletme hesabı bulunamadı' },
         { status: 403 }
       );
     }
 
-    // İşletme bilgilerini güncelle
-    const result = await db.run(`
-      UPDATE businesses 
-      SET name = ?, description = ?, address = ?, phone = ?
-      WHERE user_id = ?
-    `, [name, description || '', address, phone, user.id]);
-
-    await db.close();
-
-    if (result.changes === 0) {
+    const business = await db.get('SELECT id FROM businesses WHERE user_id = ?', [user.id]);
+    if (!business) {
+      await db.close();
       return NextResponse.json(
         { success: false, message: 'İşletme bulunamadı' },
         { status: 404 }
       );
     }
+
+    // İşletme bilgilerini güncelle
+    await db.run(`
+      UPDATE businesses 
+      SET name = ?, description = ?, address = ?, phone = ?
+      WHERE id = ?
+    `, [name, description || '', address, phone, business.id]);
+
+    await db.close();
 
     return NextResponse.json({
       success: true,

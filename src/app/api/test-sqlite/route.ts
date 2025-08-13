@@ -1,12 +1,77 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { openDb } from '@/lib/sqlite';
+import { runMigrations, testConnection, getDatabaseStats } from '@/lib/sqlite-migrate';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const db = await openDb();
-    await db.close();
-    return NextResponse.json({ success: true, message: 'SQLite bağlantısı başarılı!' });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, message: 'Bağlantı hatası', error: err.message });
+    const { searchParams } = new URL(request.url);
+    const action = searchParams.get('action');
+
+    switch (action) {
+      case 'migrate':
+        // Migration'ları çalıştır
+        await runMigrations();
+        return NextResponse.json({
+          success: true,
+          message: 'Migrations completed successfully'
+        });
+
+      case 'test':
+        // Veritabanı bağlantısını test et
+        const isConnected = await testConnection();
+        return NextResponse.json({
+          success: true,
+          connected: isConnected,
+          message: isConnected ? 'Database connection successful' : 'Database connection failed'
+        });
+
+      case 'stats':
+        // Veritabanı istatistiklerini getir
+        const stats = await getDatabaseStats();
+        return NextResponse.json({
+          success: true,
+          stats: stats
+        });
+
+      case 'tables':
+        // Tablo yapılarını getir
+        const db = await openDb();
+        const tables = await db.all(`
+          SELECT name FROM sqlite_master 
+          WHERE type='table' AND name NOT LIKE 'sqlite_%'
+        `);
+        
+        const tableSchemas = {};
+        for (const table of tables) {
+          const schema = await db.all(`PRAGMA table_info(${table.name})`);
+          tableSchemas[table.name] = schema;
+        }
+        
+        await db.close();
+        
+        return NextResponse.json({
+          success: true,
+          tables: tableSchemas
+        });
+
+      default:
+        return NextResponse.json({
+          success: true,
+          message: 'SQLite test endpoint',
+          availableActions: ['migrate', 'test', 'stats', 'tables'],
+          usage: 'Add ?action=action_name to test different functions'
+        });
+    }
+
+  } catch (error: any) {
+    console.error('Test endpoint error:', error);
+    return NextResponse.json(
+      { 
+        success: false, 
+        message: 'Test failed',
+        error: error.message 
+      },
+      { status: 500 }
+    );
   }
 }
