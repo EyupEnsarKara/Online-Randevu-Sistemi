@@ -57,10 +57,6 @@ export async function GET(request: NextRequest) {
         { day: 'Cuma', open: '09:00', close: '18:00', isOpen: true },
         { day: 'Cumartesi', open: '09:00', close: '16:00', isOpen: true },
         { day: 'Pazar', open: '10:00', close: '16:00', isOpen: false }
-      ],
-      services: [
-        { name: 'Konsültasyon', duration: 30, price: 100 },
-        { name: 'Tam Muayene', duration: 60, price: 200 }
       ]
     };
 
@@ -103,19 +99,12 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const { workingHours, services } = await request.json();
+    const { workingHours } = await request.json();
 
     // Validasyon
     if (!workingHours || !Array.isArray(workingHours)) {
       return NextResponse.json(
         { success: false, message: 'Geçerli çalışma saatleri gerekli' },
-        { status: 400 }
-      );
-    }
-
-    if (!services || !Array.isArray(services)) {
-      return NextResponse.json(
-        { success: false, message: 'Geçerli hizmetler gerekli' },
         { status: 400 }
       );
     }

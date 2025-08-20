@@ -10,19 +10,11 @@ interface WorkingHours {
   isOpen: boolean;
 }
 
-interface Service {
-  id?: number;
-  name: string;
-  duration: number;
-  price: number;
-}
-
 export default function BusinessSettingsPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
-  const [activeTab, setActiveTab] = useState<'hours' | 'services'>('hours');
   
   const [workingHours, setWorkingHours] = useState<WorkingHours[]>([
     { day: 'Pazartesi', open: '09:00', close: '18:00', isOpen: true },
@@ -32,10 +24,6 @@ export default function BusinessSettingsPage() {
     { day: 'Cuma', open: '09:00', close: '18:00', isOpen: true },
     { day: 'Cumartesi', open: '09:00', close: '16:00', isOpen: true },
     { day: 'Pazar', open: '10:00', close: '16:00', isOpen: false }
-  ]);
-
-  const [services, setServices] = useState<Service[]>([
-    { name: '', duration: 30, price: 0 }
   ]);
 
   useEffect(() => {
@@ -54,9 +42,6 @@ export default function BusinessSettingsPage() {
           if (data.settings.workingHours) {
             setWorkingHours(data.settings.workingHours);
           }
-          if (data.settings.services) {
-            setServices(data.settings.services);
-          }
         }
       }
     } catch (error) {
@@ -72,23 +57,6 @@ export default function BusinessSettingsPage() {
     setWorkingHours(updatedHours);
   };
 
-  const handleServiceChange = (index: number, field: keyof Service, value: any) => {
-    const updatedServices = [...services];
-    updatedServices[index] = { ...updatedServices[index], [field]: value };
-    setServices(updatedServices);
-  };
-
-  const addService = () => {
-    setServices([...services, { name: '', duration: 30, price: 0 }]);
-  };
-
-  const removeService = (index: number) => {
-    if (services.length > 1) {
-      const updatedServices = services.filter((_, i) => i !== index);
-      setServices(updatedServices);
-    }
-  };
-
   const saveSettings = async () => {
     setSaving(true);
     setMessage('');
@@ -101,8 +69,7 @@ export default function BusinessSettingsPage() {
         },
         credentials: 'include',
         body: JSON.stringify({
-          workingHours,
-          services: services.filter(service => service.name.trim() !== '')
+          workingHours
         })
       });
 
@@ -162,7 +129,7 @@ export default function BusinessSettingsPage() {
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">İşletme Ayarları</h1>
-            <p className="text-gray-600 mt-2">Çalışma saatleri ve hizmetlerinizi yönetin</p>
+            <p className="text-gray-600 mt-2">Çalışma saatlerinizi yönetin</p>
           </div>
 
           {message && (
@@ -175,134 +142,45 @@ export default function BusinessSettingsPage() {
             </div>
           )}
 
-          {/* Tab Navigation */}
-          <div className="border-b border-gray-200 mb-8">
-            <nav className="-mb-px flex space-x-8">
-              <button
-                onClick={() => setActiveTab('hours')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'hours'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Çalışma Saatleri
-              </button>
-              <button
-                onClick={() => setActiveTab('services')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'services'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Hizmetler
-              </button>
-            </nav>
+          {/* Working Hours Section */}
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold text-gray-900">Çalışma Saatleri</h3>
+            <div className="space-y-4">
+              {workingHours.map((day, index) => (
+                <div key={day.day} className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg">
+                  <div className="w-24">
+                    <span className="text-sm font-medium text-gray-700">{day.day}</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={day.isOpen}
+                      onChange={(e) => handleWorkingHoursChange(index, 'isOpen', e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-600">Açık</span>
+                  </div>
+                  {day.isOpen && (
+                    <>
+                      <input
+                        type="time"
+                        value={day.open}
+                        onChange={(e) => handleWorkingHoursChange(index, 'open', e.target.value)}
+                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                      <span className="text-gray-500">-</span>
+                      <input
+                        type="time"
+                        value={day.close}
+                        onChange={(e) => handleWorkingHoursChange(index, 'close', e.target.value)}
+                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-
-          {/* Tab Content */}
-          {activeTab === 'hours' && (
-            <div className="space-y-6">
-              <h3 className="text-lg font-semibold text-gray-900">Çalışma Saatleri</h3>
-              <div className="space-y-4">
-                {workingHours.map((day, index) => (
-                  <div key={day.day} className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg">
-                    <div className="w-24">
-                      <span className="text-sm font-medium text-gray-700">{day.day}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={day.isOpen}
-                        onChange={(e) => handleWorkingHoursChange(index, 'isOpen', e.target.checked)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="text-sm text-gray-600">Açık</span>
-                    </div>
-                    {day.isOpen && (
-                      <>
-                        <input
-                          type="time"
-                          value={day.open}
-                          onChange={(e) => handleWorkingHoursChange(index, 'open', e.target.value)}
-                          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                        <span className="text-gray-500">-</span>
-                        <input
-                          type="time"
-                          value={day.close}
-                          onChange={(e) => handleWorkingHoursChange(index, 'close', e.target.value)}
-                          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                      </>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'services' && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">Hizmetler</h3>
-                <button
-                  onClick={addService}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200"
-                >
-                  Hizmet Ekle
-                </button>
-              </div>
-              <div className="space-y-4">
-                {services.map((service, index) => (
-                  <div key={index} className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg">
-                    <div className="flex-1">
-                      <input
-                        type="text"
-                        value={service.name}
-                        onChange={(e) => handleServiceChange(index, 'name', e.target.value)}
-                        placeholder="Hizmet adı"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                    <div className="w-32">
-                      <input
-                        type="number"
-                        value={service.duration}
-                        onChange={(e) => handleServiceChange(index, 'duration', parseInt(e.target.value))}
-                        placeholder="Süre (dk)"
-                        min="15"
-                        step="15"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                    <div className="w-32">
-                      <input
-                        type="number"
-                        value={service.price}
-                        onChange={(e) => handleServiceChange(index, 'price', parseFloat(e.target.value))}
-                        placeholder="Fiyat (₺)"
-                        min="0"
-                        step="0.01"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                    {services.length > 1 && (
-                      <button
-                        onClick={() => removeService(index)}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Save Button */}
           <div className="flex justify-end pt-6">
