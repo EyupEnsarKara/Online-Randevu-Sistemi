@@ -132,7 +132,7 @@ export default function LoginPage() {
 
         {/* Footer */}
         <div className="text-center text-gray-500 text-sm">
-          <p>© 2024 Online Randevu Sistemi. Tüm hakları saklıdır.</p>
+          <p>Online Randevu Sistemi</p>
         </div>
       </div>
     </div>
