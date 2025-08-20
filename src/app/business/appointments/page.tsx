@@ -69,6 +69,8 @@ export default function BusinessAppointmentsCalendarPage() {
 	const [dayAppointments, setDayAppointments] = useState<BusinessAppointment[]>([]);
 	const [loading, setLoading] = useState<boolean>(false);
 	const [error, setError] = useState<string>('');
+	const [monthDatesWithAppointments, setMonthDatesWithAppointments] = useState<Set<string>>(new Set());
+	const [monthMapLoading, setMonthMapLoading] = useState<boolean>(false);
 
 	// Takvim ızgarası: önceki/sonraki ayın doldurma günleri dahil 6 satır x 7 sütun
 	const calendarDays = useMemo(() => {
@@ -132,6 +134,35 @@ export default function BusinessAppointmentsCalendarPage() {
 		})();
 		return () => controller.abort();
 	}, [selectedDate]);
+
+	// Ay görünümü değiştiğinde o aya ait randevu olan günleri getir
+	useEffect(() => {
+		const controller = new AbortController();
+		(async () => {
+			setMonthMapLoading(true);
+			try {
+				const year = currentMonth.getFullYear();
+				const month = String(currentMonth.getMonth() + 1).padStart(2, '0');
+				const res = await fetch(`/api/appointments?limit=1000&offset=0`, { signal: controller.signal });
+				if (!res.ok) return;
+				const data = await res.json();
+				if (!data?.success || !Array.isArray(data.appointments)) return;
+				const prefix = `${year}-${month}-`;
+				const setDates = new Set<string>();
+				for (const a of data.appointments as BusinessAppointment[]) {
+					if (typeof a.date === 'string' && a.date.startsWith(prefix)) {
+						setDates.add(a.date);
+					}
+				}
+				setMonthDatesWithAppointments(setDates);
+			} catch (_) {
+				// sessiz geç
+			} finally {
+				setMonthMapLoading(false);
+			}
+		})();
+		return () => controller.abort();
+	}, [currentMonth]);
 
 	const goPrevMonth = () => {
 		const d = new Date(currentMonth);
@@ -216,6 +247,9 @@ export default function BusinessAppointmentsCalendarPage() {
 										)}
 									>
 										<div>{date.getDate()}</div>
+										{inCurrentMonth && monthDatesWithAppointments.has(formatYMD(date)) && (
+											<span className={classNames('mx-auto mt-1 block h-1 w-1 rounded-full', selected ? 'bg-white' : 'bg-blue-500')}></span>
+										)}
 									</button>
 								);
 							})}
