@@ -11,6 +11,14 @@ interface User {
   user_type: 'customer' | 'business';
 }
 
+interface BusinessProfile {
+  id: number;
+  name: string;
+  description: string;
+  address: string;
+  phone: string;
+}
+
 export default function ProfilePage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
@@ -23,6 +31,17 @@ export default function ProfilePage() {
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''
+  });
+
+  // İşletme bilgileri (yalnızca business kullanıcıları için)
+  const [business, setBusiness] = useState<BusinessProfile | null>(null);
+  const [businessLoading, setBusinessLoading] = useState(false);
+  const [businessMessage, setBusinessMessage] = useState('');
+  const [businessForm, setBusinessForm] = useState({
+    name: '',
+    description: '',
+    address: '',
+    phone: ''
   });
 
   useEffect(() => {
@@ -40,6 +59,30 @@ export default function ProfilePage() {
           name: data.user.name,
           email: data.user.email
         }));
+
+        // İşletme kullanıcısı ise işletme bilgilerini çek
+        if (data.user.user_type === 'business') {
+          setBusinessLoading(true);
+          try {
+            const bizRes = await fetch('/api/business/profile', { credentials: 'include' });
+            if (bizRes.ok) {
+              const bizData = await bizRes.json();
+              if (bizData.success && bizData.business) {
+                setBusiness(bizData.business);
+                setBusinessForm({
+                  name: bizData.business.name || '',
+                  description: bizData.business.description || '',
+                  address: bizData.business.address || '',
+                  phone: bizData.business.phone || ''
+                });
+              }
+            }
+          } catch (e) {
+            console.error('Business profile fetch error:', e);
+          } finally {
+            setBusinessLoading(false);
+          }
+        }
       } else {
         router.push('/login');
       }
@@ -125,6 +168,32 @@ export default function ProfilePage() {
     });
   };
 
+  const handleBusinessChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setBusinessForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleBusinessSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusinessMessage('');
+    try {
+      const res = await fetch('/api/business/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(businessForm)
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setBusinessMessage('İşletme bilgileri başarıyla güncellendi');
+      } else {
+        setBusinessMessage(data.message || 'Güncelleme sırasında hata oluştu');
+      }
+    } catch (err) {
+      setBusinessMessage('Güncelleme sırasında hata oluştu');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -158,8 +227,9 @@ export default function ProfilePage() {
         </div>
       </header>
 
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-2xl shadow-xl p-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="bg-white rounded-2xl shadow-xl p-8">
           <div className="text-center mb-8">
             <div className="h-20 w-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="h-10 w-10 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -290,6 +360,93 @@ export default function ProfilePage() {
               ← Ana Sayfaya Dön
             </Link>
           </div>
+          </div>
+
+          {/* İşletme Bilgileri (Business kullanıcıları için) */}
+          {user.user_type === 'business' && (
+          <div className="bg-white rounded-2xl shadow-xl p-8">
+            <div className="mb-6">
+              <h3 className="text-2xl font-bold text-gray-900">İşletme Bilgileri</h3>
+              <p className="text-gray-600 mt-1">İşletme bilgilerinizi güncelleyin</p>
+            </div>
+
+            {businessLoading ? (
+              <div className="text-gray-600">Yükleniyor...</div>
+            ) : (
+              <form onSubmit={handleBusinessSubmit} className="space-y-6">
+                <div>
+                  <label htmlFor="biz_name" className="block text-sm font-medium text-gray-700 mb-2">İşletme Adı *</label>
+                  <input
+                    id="biz_name"
+                    name="name"
+                    type="text"
+                    value={businessForm.name}
+                    onChange={handleBusinessChange}
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                    placeholder="İşletme adınızı girin"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="biz_description" className="block text-sm font-medium text-gray-700 mb-2">Açıklama</label>
+                  <textarea
+                    id="biz_description"
+                    name="description"
+                    rows={4}
+                    value={businessForm.description}
+                    onChange={handleBusinessChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                    placeholder="İşletmeniz hakkında kısa bir açıklama yazın"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="biz_address" className="block text-sm font-medium text-gray-700 mb-2">Adres *</label>
+                  <input
+                    id="biz_address"
+                    name="address"
+                    type="text"
+                    value={businessForm.address}
+                    onChange={handleBusinessChange}
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                    placeholder="İşletme adresinizi girin"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="biz_phone" className="block text-sm font-medium text-gray-700 mb-2">Telefon *</label>
+                  <input
+                    id="biz_phone"
+                    name="phone"
+                    type="tel"
+                    value={businessForm.phone}
+                    onChange={handleBusinessChange}
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                    placeholder="Telefon numaranızı girin"
+                  />
+                </div>
+
+                {businessMessage && (
+                  <div className={`p-3 rounded-lg ${businessMessage.includes('başarıyla') ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+                    {businessMessage}
+                  </div>
+                )}
+
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-200"
+                  >
+                    Kaydet
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+          )}
         </div>
       </div>
     </div>

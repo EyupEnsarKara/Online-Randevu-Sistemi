@@ -103,14 +103,7 @@ export default function Dashboard() {
               >
                 Profil
               </Link>
-              {user.user_type === 'business' && (
-                <Link
-                  href="/business/settings"
-                  className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition duration-200"
-                >
-                  İşletme Ayarları
-                </Link>
-              )}
+              {/* İşletme Ayarları bağlantısı header'dan kaldırıldı */}
               <button
                 onClick={handleLogout}
                 className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition duration-200"
@@ -236,16 +229,16 @@ export default function Dashboard() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                     </svg>
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900 ml-4">Tüm Randevular</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 ml-4">Tarihli Randevular</h3>
                 </div>
                 <p className="text-gray-600 mb-4">
-                  İşletmenizin tüm randevularını yönetin.
+                  Takvim ve günlük görünümde randevuları görüntüleyin ve yönetin.
                 </p>
                 <Link 
-                  href="/appointments"
+                  href="/business/appointments"
                   className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-200 font-medium"
                 >
-                  Randevuları Yönet
+                  Takvimi Aç
                 </Link>
               </div>
 
@@ -262,10 +255,10 @@ export default function Dashboard() {
                   İşletme bilgilerinizi düzenleyin.
                 </p>
                 <Link 
-                  href="/business/profile"
+                  href="/business/settings"
                   className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition duration-200 font-medium"
                 >
-                  Bilgileri Düzenle
+                  İşletme Ayarları
                 </Link>
               </div>
 
@@ -273,6 +266,8 @@ export default function Dashboard() {
             </>
           )}
         </div>
+
+        {/* İşletme Ayarları ana ekrandan kaldırıldı - sadece buton ile ayrı sayfa */}
 
         {/* Quick Stats */}
         <div className="mt-8 bg-white rounded-2xl shadow-xl p-6">
@@ -297,6 +292,138 @@ export default function Dashboard() {
           </div>
         </div>
       </main>
+    </div>
+  );
+}
+
+// İşletme Ayarları Inline Bileşeni
+function BusinessSettingsInline() {
+  const [settingsLoading, setSettingsLoading] = useState(true);
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [settingsMessage, setSettingsMessage] = useState('');
+  const [workingHours, setWorkingHours] = useState([
+    { day: 'Pazartesi', open: '09:00', close: '18:00', isOpen: true },
+    { day: 'Salı', open: '09:00', close: '18:00', isOpen: true },
+    { day: 'Çarşamba', open: '09:00', close: '18:00', isOpen: true },
+    { day: 'Perşembe', open: '09:00', close: '18:00', isOpen: true },
+    { day: 'Cuma', open: '09:00', close: '18:00', isOpen: true },
+    { day: 'Cumartesi', open: '09:00', close: '16:00', isOpen: true },
+    { day: 'Pazar', open: '10:00', close: '16:00', isOpen: false },
+  ]);
+
+  useEffect(() => {
+    fetchBusinessSettings();
+  }, []);
+
+  const fetchBusinessSettings = async () => {
+    try {
+      const response = await fetch('/api/business/settings', { credentials: 'include' });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.settings?.workingHours) {
+          setWorkingHours(data.settings.workingHours);
+        }
+      }
+    } catch (error) {
+      console.error('Business settings fetch error:', error);
+    } finally {
+      setSettingsLoading(false);
+    }
+  };
+
+  const handleWorkingHoursChange = (index: number, field: 'day' | 'open' | 'close' | 'isOpen', value: any) => {
+    const updated = [...workingHours];
+    updated[index] = { ...updated[index], [field]: value } as any;
+    setWorkingHours(updated);
+  };
+
+  const saveSettings = async () => {
+    setSettingsSaving(true);
+    setSettingsMessage('');
+    try {
+      const response = await fetch('/api/business/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ workingHours }),
+      });
+      const data = await response.json();
+      if (response.ok && data.success) {
+        setSettingsMessage('Ayarlar başarıyla kaydedildi');
+      } else {
+        setSettingsMessage(data.message || 'Kaydetme sırasında hata oluştu');
+      }
+    } catch (error) {
+      setSettingsMessage('Kaydetme sırasında hata oluştu');
+    } finally {
+      setSettingsSaving(false);
+    }
+  };
+
+  return (
+    <div className="mt-8 bg-white rounded-2xl shadow-xl p-8">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h3 className="text-2xl font-bold text-gray-900">İşletme Ayarları</h3>
+          <p className="text-gray-600 mt-1">Çalışma saatlerinizi yönetin</p>
+        </div>
+      </div>
+
+      {settingsLoading ? (
+        <div className="text-gray-600">Yükleniyor...</div>
+      ) : (
+        <div className="space-y-4">
+          {workingHours.map((day, index) => (
+            <div key={day.day} className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg">
+              <div className="w-24">
+                <span className="text-sm font-medium text-gray-700">{day.day}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={day.isOpen}
+                  onChange={(e) => handleWorkingHoursChange(index, 'isOpen', e.target.checked)}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-600">Açık</span>
+              </div>
+              {day.isOpen && (
+                <>
+                  <input
+                    type="time"
+                    value={day.open}
+                    onChange={(e) => handleWorkingHoursChange(index, 'open', e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <span className="text-gray-500">-</span>
+                  <input
+                    type="time"
+                    value={day.close}
+                    onChange={(e) => handleWorkingHoursChange(index, 'close', e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </>
+              )}
+            </div>
+          ))}
+
+          {settingsMessage && (
+            <div className={`p-3 rounded-lg ${settingsMessage.includes('başarıyla') ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+              {settingsMessage}
+            </div>
+          )}
+
+          <div className="flex justify-end pt-2">
+            <button
+              onClick={saveSettings}
+              disabled={settingsSaving}
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {settingsSaving ? 'Kaydediliyor...' : 'Kaydet'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
