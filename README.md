@@ -40,27 +40,50 @@ Modern ve kullanıcı dostu bir online randevu yönetim sistemi. Bu proje, işle
 
 ## 🚀 Kurulum
 
-1. Projeyi klonlayın:
+### 1. Projeyi Klonlayın
 ```bash
 git clone <repository-url>
 cd Online-Randevu-Sistemi
 ```
 
-2. Bağımlılıkları yükleyin:
+### 2. Bağımlılıkları Yükleyin
 ```bash
 npm install
 # veya
 yarn install
 ```
 
-3. Geliştirme sunucusunu başlatın:
+### 3. Environment Variables Oluşturun
+Proje ana dizininde `.env.local` dosyası oluşturun:
+```env
+JWT_SECRET_KEY=your-super-secret-jwt-key-here-12345
+```
+
+### 4. Veritabanını Kurun
+```bash
+# Veritabanı tablolarını oluştur
+npm run setup-db
+
+# Test verisi ekle (opsiyonel)
+npm run add-test-data
+```
+
+### 5. Development Server'ı Başlatın
 ```bash
 npm run dev
 # veya
 yarn dev
 ```
 
-4. Tarayıcınızda [http://localhost:3000](http://localhost:3000) adresini açın.
+### 6. Tarayıcıda Açın
+[http://localhost:3000](http://localhost:3000) adresini açın.
+
+## 🔑 Test Hesapları
+
+Eğer test verisi eklediyseniz:
+
+- **Müşteri Hesabı:** `ahmet@test.com` / `123456`
+- **İşletme Hesabı:** `ayse@test.com` / `123456`
 
 ## 📁 Proje Yapısı
 
@@ -90,6 +113,8 @@ src/
 - `npm run build` - Production build oluşturur
 - `npm run start` - Production sunucusunu başlatır
 - `npm run lint` - ESLint ile kod kontrolü yapar
+- `npm run setup-db` - Veritabanı kurulumu yapar
+- `npm run add-test-data` - Test verisi ekler
 
 ## 🌐 API Endpoint'leri
 
@@ -111,12 +136,31 @@ src/
 - `GET /api/business/appointments` - İşletme randevuları
 - `GET /api/business-hours` - Çalışma saatleri
 
+### Test ve Debug
+- `GET /api/test-sqlite?action=migrate` - Migration çalıştır
+- `GET /api/test-sqlite?action=test` - Bağlantı test et
+- `GET /api/test-sqlite?action=stats` - İstatistikleri getir
+- `GET /api/test-sqlite?action=tables` - Tablo yapılarını getir
+
+## 🗄️ Veritabanı
+
+### Tablolar
+- **users** - Kullanıcı bilgileri
+- **businesses** - İşletme bilgileri  
+- **appointments** - Randevu bilgileri
+- **migrations** - Migration kayıtları
+
+### Veritabanı Dosyası
+- `sqlite.db` - SQLite veritabanı dosyası
+- Otomatik olarak oluşturulur
+
 ## 🔐 Güvenlik
 
 - JWT token tabanlı kimlik doğrulama
 - Şifre hash'leme (bcrypt)
 - Güvenli HTTP-only cookie'ler
 - Middleware ile korumalı rotalar
+- Environment variable ile secret key yönetimi
 
 ## 🎨 Tasarım
 
@@ -146,6 +190,21 @@ vercel --prod
 npm run build
 npm run start
 ```
+
+## 🐛 Sorun Giderme
+
+### JWT Secret Key Hatası
+```
+Error: JWT Secret key is not matched
+```
+
+**Çözüm:** `.env.local` dosyasında `JWT_SECRET_KEY` tanımlayın.
+
+### Veritabanı Bağlantı Hatası
+**Çözüm:** `npm run setup-db` komutunu çalıştırın.
+
+### Test Verisi Ekleme
+**Çözüm:** `npm run add-test-data` komutunu çalıştırın.
 
 ## 🤝 Katkıda Bulunma
 
