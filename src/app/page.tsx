@@ -3,22 +3,17 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  user_type: 'customer' | 'business';
-}
+import { User, Stats } from '@/types';
 
 export default function Dashboard() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<Stats>({
     total: 0,
     confirmed: 0,
     pending: 0,
-            cancelled: 0
+    cancelled: 0
   });
 
   useEffect(() => {

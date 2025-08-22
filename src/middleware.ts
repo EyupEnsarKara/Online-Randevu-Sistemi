@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server';
 import { verifyJwtToken } from './lib/auth';
+import type { NextRequest } from 'next/server';
 
-
-
-// src/middleware.js
-export async function middleware(request) {
+export async function middleware(request: NextRequest) {
     const { url, nextUrl, cookies } = request;
     const { value: token } = cookies.get("token") ?? { value: null };
     const hasVerifiedToken = token && (await verifyJwtToken(token));
