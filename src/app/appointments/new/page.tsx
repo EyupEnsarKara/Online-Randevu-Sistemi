@@ -28,6 +28,9 @@ export default function NewAppointmentPage() {
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [businessWorkingDays, setBusinessWorkingDays] = useState<{[key: number]: boolean}>({});
   const [loadingWorkingDays, setLoadingWorkingDays] = useState(false);
+  
+  // Ay geçişi için state
+  const [currentMonth, setCurrentMonth] = useState(new Date());
 
   // URL'den işletme ID'sini al
   useEffect(() => {
@@ -176,6 +179,27 @@ export default function NewAppointmentPage() {
     });
   };
 
+  // Ay değiştirme fonksiyonları
+  const goToPreviousMonth = () => {
+    setCurrentMonth(prev => {
+      const newMonth = new Date(prev);
+      newMonth.setMonth(prev.getMonth() - 1);
+      return newMonth;
+    });
+  };
+
+  const goToNextMonth = () => {
+    setCurrentMonth(prev => {
+      const newMonth = new Date(prev);
+      newMonth.setMonth(prev.getMonth() + 1);
+      return newMonth;
+    });
+  };
+
+  const goToCurrentMonth = () => {
+    setCurrentMonth(new Date());
+  };
+
   // Bugünden sonraki tarihleri al
   const getMinDate = () => {
     const today = new Date();
@@ -184,12 +208,11 @@ export default function NewAppointmentPage() {
 
   // Takvim için yardımcı fonksiyonlar
   const getCurrentMonthDates = () => {
-    const today = new Date();
-    const currentMonth = today.getMonth();
-    const currentYear = today.getFullYear();
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
     
-    const firstDay = new Date(currentYear, currentMonth, 1);
-    const lastDay = new Date(currentYear, currentMonth + 1, 0);
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
     
     const dates = [];
     const startDate = new Date(firstDay);
@@ -242,8 +265,14 @@ export default function NewAppointmentPage() {
   };
 
   const isCurrentMonth = (date: Date) => {
+    return date.getMonth() === currentMonth.getMonth() && date.getFullYear() === currentMonth.getFullYear();
+  };
+
+  const isToday = (date: Date) => {
     const today = new Date();
-    return date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
+    return date.getDate() === today.getDate() && 
+           date.getMonth() === today.getMonth() && 
+           date.getFullYear() === today.getFullYear();
   };
 
   return (
@@ -329,11 +358,40 @@ export default function NewAppointmentPage() {
                 </div>
               ) : (
                 <div className="border border-gray-300 rounded-lg p-4 bg-white">
-                  {/* Takvim Başlığı */}
-                  <div className="text-center mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {new Date().toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' })}
-                    </h3>
+                  {/* Takvim Başlığı ve Navigasyon */}
+                  <div className="flex items-center justify-between mb-4">
+                    <button
+                      type="button"
+                      onClick={goToPreviousMonth}
+                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    
+                    <div className="flex items-center space-x-3">
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {currentMonth.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' })}
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={goToCurrentMonth}
+                        className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
+                      >
+                        Bugün
+                      </button>
+                    </div>
+                    
+                    <button
+                      type="button"
+                      onClick={goToNextMonth}
+                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
                   </div>
                   
                   {/* Gün Başlıkları */}
@@ -360,20 +418,21 @@ export default function NewAppointmentPage() {
                       const isSelectable = isDateSelectable(date);
                       const isSelected = formData.date === dateStr;
                       const isCurrentMonthDate = isCurrentMonth(date);
+                      const isTodayDate = isToday(date);
                       
                       return (
                         <button
                           key={index}
                           type="button"
-                                                     onClick={() => {
-                             if (isSelectable) {
-                               console.log('Seçilen tarih:', dateStr, 'Orijinal date objesi:', date);
-                               setFormData({...formData, date: dateStr});
-                             }
-                           }}
+                          onClick={() => {
+                            if (isSelectable) {
+                              console.log('Seçilen tarih:', dateStr, 'Orijinal date objesi:', date);
+                              setFormData({...formData, date: dateStr});
+                            }
+                          }}
                           disabled={!isSelectable}
                           className={`
-                            p-2 text-sm rounded-lg transition-all duration-200 min-h-[40px] flex flex-col items-center justify-center
+                            p-2 text-sm rounded-lg transition-all duration-200 min-h-[40px] flex flex-col items-center justify-center relative
                             ${isSelected 
                               ? 'bg-blue-600 text-white font-medium border-2 border-blue-700' 
                               : isSelectable
@@ -381,10 +440,16 @@ export default function NewAppointmentPage() {
                                 : 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
                             }
                             ${!isCurrentMonthDate ? 'opacity-50' : ''}
+                            ${isTodayDate ? 'ring-2 ring-blue-300' : ''}
                           `}
                         >
                           <span className="text-xs font-medium">{getDayName(date)}</span>
-                          <span className="text-xs font-bold">{date.getDate()}</span>
+                          <span className={`text-xs font-bold ${isTodayDate ? 'text-blue-600' : ''}`}>
+                            {date.getDate()}
+                          </span>
+                          {isTodayDate && (
+                            <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full"></span>
+                          )}
                           {isSelectable && (
                             <span className="text-xs mt-1">🟢</span>
                           )}
@@ -409,8 +474,9 @@ export default function NewAppointmentPage() {
                   
                   {/* Açıklama */}
                   <div className="mt-3 text-center text-xs text-gray-500">
-                    <p>🟢 Çalışma günü | 🔴 Kapalı gün</p>
+                    <p>🟢 Çalışma günü | 🔴 Kapalı gün | 🔵 Bugün</p>
                     <p className="mt-1">Sadece çalışma günlerinde randevu alabilirsiniz</p>
+                    <p className="mt-1">Önceki ve sonraki aylara geçiş yapabilirsiniz</p>
                   </div>
                 </div>
               )}
