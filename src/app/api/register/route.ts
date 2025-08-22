@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { openDb } from '@/lib/sqlite.js';
+import { openDb } from '@/lib/sqlite';
 import bcrypt from 'bcrypt';
 
 export async function POST(request: NextRequest) {

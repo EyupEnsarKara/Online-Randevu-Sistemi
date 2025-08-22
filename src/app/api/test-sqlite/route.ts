@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { openDb } from '@/lib/sqlite';
-import { runMigrations, testConnection, getDatabaseStats } from '@/lib/sqlite-migrate';
+import { runMigrations, testDatabaseConnection, getDatabaseStats } from '@/lib/sqlite-migrate';
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
 
       case 'test':
         // Veritabanı bağlantısını test et
-        const isConnected = await testConnection();
+        const isConnected = await testDatabaseConnection();
         return NextResponse.json({
           success: true,
           connected: isConnected,

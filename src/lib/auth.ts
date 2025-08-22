@@ -1,6 +1,6 @@
 import { jwtVerify } from "jose";
 
-export function getJwtSecretKey() {
+export function getJwtSecretKey(): Uint8Array {
     const secret = process.env.JWT_SECRET_KEY;
 
     if (!secret) {
@@ -10,10 +10,9 @@ export function getJwtSecretKey() {
     return new TextEncoder().encode(secret);
 }
 
-export async function verifyJwtToken(token) {
+export async function verifyJwtToken(token: string): Promise<any> {
     try {
         const { payload } = await jwtVerify(token, getJwtSecretKey());
-
         return payload;
     } catch (error) {
         return null;

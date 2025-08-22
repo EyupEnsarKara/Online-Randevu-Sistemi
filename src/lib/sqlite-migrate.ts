@@ -1,8 +1,14 @@
 import sqlite3 from 'sqlite3';
-import { open } from 'sqlite';
+import { open, Database } from 'sqlite';
+
+// Migration tip tanımları
+interface Migration {
+  name: string;
+  sql: string;
+}
 
 // Veritabanı migration utility'si
-export async function runMigrations() {
+export async function runMigrations(): Promise<void> {
   const db = await open({
     filename: './sqlite.db',
     driver: sqlite3.Database
@@ -19,7 +25,7 @@ export async function runMigrations() {
     `);
 
     // Migration'ları tanımla
-    const migrations = [
+    const migrations: Migration[] = [
       {
         name: '001_create_users_table',
         sql: `
@@ -104,23 +110,12 @@ export async function runMigrations() {
 
     // Migration'ları çalıştır
     for (const migration of migrations) {
-      const exists = await db.get(
-        'SELECT id FROM migrations WHERE name = ?',
-        [migration.name]
-      );
-
-      if (!exists) {
+      const existing = await db.get('SELECT * FROM migrations WHERE name = ?', [migration.name]);
+      
+      if (!existing) {
         console.log(`Running migration: ${migration.name}`);
-        
-        // Migration'ı çalıştır
         await db.exec(migration.sql);
-        
-        // Migration kaydını ekle
-        await db.run(
-          'INSERT INTO migrations (name) VALUES (?)',
-          [migration.name]
-        );
-        
+        await db.run('INSERT INTO migrations (name) VALUES (?)', [migration.name]);
         console.log(`Migration completed: ${migration.name}`);
       } else {
         console.log(`Migration already exists: ${migration.name}`);
@@ -128,7 +123,6 @@ export async function runMigrations() {
     }
 
     console.log('All migrations completed successfully');
-    
   } catch (error) {
     console.error('Migration error:', error);
     throw error;
@@ -137,65 +131,51 @@ export async function runMigrations() {
   }
 }
 
-// Veritabanı bağlantısını test et
-export async function testConnection() {
-  try {
-    const db = await open({
-      filename: './sqlite.db',
-      driver: sqlite3.Database
-    });
-
-    const result = await db.get('SELECT 1 as test');
-    await db.close();
-    
-    console.log('Database connection test successful');
-    return true;
-  } catch (error) {
-    console.error('Database connection test failed:', error);
-    return false;
-  }
-}
-
 // Veritabanı istatistiklerini getir
-export async function getDatabaseStats() {
+export async function getDatabaseStats(): Promise<Record<string, number>> {
   const db = await open({
     filename: './sqlite.db',
     driver: sqlite3.Database
   });
 
   try {
-    const stats = {};
+    const stats: Record<string, number> = {};
     
-    // Tablo sayıları
+    // Tablo sayılarını al
     const tables = ['users', 'businesses', 'appointments', 'business_hours'];
+    
     for (const table of tables) {
-      const result = await db.get(`SELECT COUNT(*) as count FROM ${table}`);
-      stats[table] = result.count;
+      try {
+        const result = await db.get(`SELECT COUNT(*) as count FROM ${table}`);
+        stats[table] = result?.count || 0;
+      } catch (error) {
+        console.warn(`Table ${table} not found or error counting:`, error);
+        stats[table] = 0;
+      }
     }
-    
-    // Migration sayısı
-    const migrationResult = await db.get('SELECT COUNT(*) as count FROM migrations');
-    stats.migrations = migrationResult.count;
-    
-    await db.close();
+
     return stats;
-    
   } catch (error) {
-    console.error('Error getting database stats:', error);
-    await db.close();
+    console.error('Database stats error:', error);
     throw error;
+  } finally {
+    await db.close();
   }
 }
 
-// Eğer bu dosya doğrudan çalıştırılırsa
-if (import.meta.url === `file://${process.argv[1]}`) {
-  runMigrations()
-    .then(() => {
-      console.log('Migration script completed');
-      process.exit(0);
-    })
-    .catch((error) => {
-      console.error('Migration script failed:', error);
-      process.exit(1);
+// Veritabanı bağlantısını test et
+export async function testDatabaseConnection(): Promise<boolean> {
+  try {
+    const db = await open({
+      filename: './sqlite.db',
+      driver: sqlite3.Database
     });
+    
+    await db.get('SELECT 1');
+    await db.close();
+    return true;
+  } catch (error) {
+    console.error('Database connection test failed:', error);
+    return false;
+  }
 }
