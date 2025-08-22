@@ -78,6 +78,27 @@ export async function runMigrations() {
           CREATE INDEX IF NOT EXISTS idx_appointments_date_time ON appointments (date, time);
           CREATE INDEX IF NOT EXISTS idx_appointments_status ON appointments (status);
         `
+      },
+      {
+        name: '005_create_business_hours_table',
+        sql: `
+          CREATE TABLE IF NOT EXISTS business_hours (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            business_id INTEGER NOT NULL,
+            day_of_week INTEGER NOT NULL,
+            open_time TEXT NOT NULL,
+            close_time TEXT NOT NULL,
+            is_working_day BOOLEAN DEFAULT 1,
+            FOREIGN KEY (business_id) REFERENCES businesses (id) ON DELETE CASCADE
+          )
+        `
+      },
+      {
+        name: '006_create_business_hours_indexes',
+        sql: `
+          CREATE INDEX IF NOT EXISTS idx_business_hours_business_id ON business_hours (business_id);
+          CREATE INDEX IF NOT EXISTS idx_business_hours_day_time ON business_hours (day_of_week, open_time, close_time);
+        `
       }
     ];
 
@@ -146,7 +167,7 @@ export async function getDatabaseStats() {
     const stats = {};
     
     // Tablo sayıları
-    const tables = ['users', 'businesses', 'appointments'];
+    const tables = ['users', 'businesses', 'appointments', 'business_hours'];
     for (const table of tables) {
       const result = await db.get(`SELECT COUNT(*) as count FROM ${table}`);
       stats[table] = result.count;

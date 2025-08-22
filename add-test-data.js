@@ -83,11 +83,27 @@ async function addTestData() {
     
     console.log('✅ 2 test randevusu oluşturuldu\n');
 
-    // 4. Sonuçları göster
+    // 4. Test çalışma saatleri oluştur
+    console.log('4️⃣ Test çalışma saatleri oluşturuluyor...');
+    
+    // Güzellik salonu için çalışma saatleri (Pazartesi-Cumartesi, 09:00-18:00)
+    const workingDays = [1, 2, 3, 4, 5, 6]; // Pazartesi-Cumartesi
+    
+    for (const day of workingDays) {
+      await db.run(`
+        INSERT INTO business_hours (business_id, day_of_week, open_time, close_time, is_working_day)
+        VALUES (?, ?, ?, ?, ?)
+      `, [businessId.id, day, '09:00', '18:00', 1]);
+    }
+    
+    console.log('✅ Test çalışma saatleri oluşturuldu\n');
+
+    // 5. Sonuçları göster
     console.log('📊 Test Verisi Özeti:');
     console.log('   👤 Kullanıcılar: 2 (1 müşteri, 1 işletme)');
     console.log('   🏢 İşletmeler: 1');
-    console.log('   📅 Randevular: 2 (1 onaylı, 1 bekleyen)\n');
+    console.log('   📅 Randevular: 2 (1 onaylı, 1 bekleyen)');
+    console.log('   🕐 Çalışma Saatleri: 6 gün (Pazartesi-Cumartesi)\n');
     
     console.log('🔑 Test Giriş Bilgileri:');
     console.log('   Müşteri: ahmet@test.com / 123456');

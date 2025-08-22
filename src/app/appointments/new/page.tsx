@@ -23,6 +23,11 @@ export default function NewAppointmentPage() {
     time: '',
     notes: ''
   });
+  const [availableSlots, setAvailableSlots] = useState<Array<{time: string, available: boolean}>>([]);
+  const [businessHours, setBusinessHours] = useState<{open: string, close: string} | null>(null);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [businessWorkingDays, setBusinessWorkingDays] = useState<{[key: number]: boolean}>({});
+  const [loadingWorkingDays, setLoadingWorkingDays] = useState(false);
 
   // URL'den işletme ID'sini al
   useEffect(() => {
@@ -52,6 +57,71 @@ export default function NewAppointmentPage() {
 
     loadBusinesses();
   }, []);
+
+  // İşletme seçildiğinde çalışma günlerini yükle
+  useEffect(() => {
+    if (selectedBusiness) {
+      loadBusinessWorkingDays(selectedBusiness);
+    }
+  }, [selectedBusiness]);
+
+  // Tarih veya işletme değiştiğinde müsait saatleri yükle
+  useEffect(() => {
+    if (selectedBusiness && formData.date) {
+      loadAvailableSlots(selectedBusiness, formData.date);
+    }
+  }, [selectedBusiness, formData.date]);
+
+  // İşletmenin çalışma günlerini yükle
+  const loadBusinessWorkingDays = async (businessId: number) => {
+    if (!businessId) return;
+    
+    setLoadingWorkingDays(true);
+    try {
+      const response = await fetch(`/api/business-hours?business_id=${businessId}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        const workingDays: {[key: number]: boolean} = {};
+        data.business_hours.forEach((hour: any) => {
+          workingDays[hour.day_of_week] = hour.is_working_day === 1;
+        });
+        setBusinessWorkingDays(workingDays);
+      } else {
+        setBusinessWorkingDays({});
+      }
+    } catch (error) {
+      console.error('Çalışma günleri yüklenirken hata:', error);
+      setBusinessWorkingDays({});
+    } finally {
+      setLoadingWorkingDays(false);
+    }
+  };
+
+  // Müsait saatleri yükle
+  const loadAvailableSlots = async (businessId: number, date: string) => {
+    if (!businessId || !date) return;
+    
+    setLoadingSlots(true);
+    try {
+      const response = await fetch(`/api/available-slots?business_id=${businessId}&date=${date}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setAvailableSlots(data.available_slots);
+        setBusinessHours(data.business_hours);
+      } else {
+        setAvailableSlots([]);
+        setBusinessHours(null);
+      }
+    } catch (error) {
+      console.error('Müsait saatler yüklenirken hata:', error);
+      setAvailableSlots([]);
+      setBusinessHours(null);
+    } finally {
+      setLoadingSlots(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,6 +180,70 @@ export default function NewAppointmentPage() {
   const getMinDate = () => {
     const today = new Date();
     return today.toISOString().split('T')[0];
+  };
+
+  // Takvim için yardımcı fonksiyonlar
+  const getCurrentMonthDates = () => {
+    const today = new Date();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+    
+    const firstDay = new Date(currentYear, currentMonth, 1);
+    const lastDay = new Date(currentYear, currentMonth + 1, 0);
+    
+    const dates = [];
+    const startDate = new Date(firstDay);
+    
+    // Ayın ilk gününden önceki boş günleri ekle
+    while (startDate.getDay() > 0) {
+      startDate.setDate(startDate.getDate() - 1);
+    }
+    
+    // Ayın tüm günlerini ekle
+    while (startDate <= lastDay) {
+      dates.push(new Date(startDate));
+      startDate.setDate(startDate.getDate() + 1);
+    }
+    
+    // Ayın son gününden sonraki boş günleri ekle
+    while (startDate.getDay() < 6) {
+      dates.push(new Date(startDate));
+      startDate.setDate(startDate.getDate() + 1);
+    }
+    
+    return dates;
+  };
+
+  const isDateSelectable = (date: Date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Tarih karşılaştırmasını düzelt
+    const dateToCheck = new Date(date);
+    dateToCheck.setHours(0, 0, 0, 0);
+    
+    if (dateToCheck < today) return false;
+    
+    const dayOfWeek = date.getDay();
+    return businessWorkingDays[dayOfWeek] === true;
+  };
+
+  const formatDate = (date: Date) => {
+    // Timezone sorununu önlemek için yerel tarih kullan
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const getDayName = (date: Date) => {
+    const dayNames = ['Pzr', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
+    return dayNames[date.getDay()];
+  };
+
+  const isCurrentMonth = (date: Date) => {
+    const today = new Date();
+    return date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
   };
 
   return (
@@ -183,21 +317,103 @@ export default function NewAppointmentPage() {
               </div>
             )}
 
-            {/* Tarih Seçimi */}
+            {/* Tarih Seçimi - Takvim */}
             <div>
-              <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-2">
-                Tarih *
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Tarih Seçin *
               </label>
-              <input
-                type="date"
-                id="date"
-                name="date"
-                value={formData.date}
-                onChange={handleChange}
-                min={getMinDate()}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 outline-none"
-                required
-              />
+              
+              {loadingWorkingDays ? (
+                <div className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-500">
+                  Çalışma günleri yükleniyor...
+                </div>
+              ) : (
+                <div className="border border-gray-300 rounded-lg p-4 bg-white">
+                  {/* Takvim Başlığı */}
+                  <div className="text-center mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {new Date().toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' })}
+                    </h3>
+                  </div>
+                  
+                  {/* Gün Başlıkları */}
+                  <div className="grid grid-cols-7 gap-1 mb-2">
+                    {['Pzr', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'].map((day, index) => {
+                      const isWorkingDay = businessWorkingDays[index];
+                      return (
+                        <div key={day} className={`text-center text-sm font-medium py-2 ${
+                          isWorkingDay ? 'text-green-600' : 'text-red-500'
+                        }`}>
+                          {day}
+                          <div className="text-xs mt-1">
+                            {isWorkingDay ? '🟢' : '🔴'}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  {/* Takvim Günleri */}
+                  <div className="grid grid-cols-7 gap-1">
+                    {getCurrentMonthDates().map((date, index) => {
+                      const dateStr = formatDate(date);
+                      const isSelectable = isDateSelectable(date);
+                      const isSelected = formData.date === dateStr;
+                      const isCurrentMonthDate = isCurrentMonth(date);
+                      
+                      return (
+                        <button
+                          key={index}
+                          type="button"
+                                                     onClick={() => {
+                             if (isSelectable) {
+                               console.log('Seçilen tarih:', dateStr, 'Orijinal date objesi:', date);
+                               setFormData({...formData, date: dateStr});
+                             }
+                           }}
+                          disabled={!isSelectable}
+                          className={`
+                            p-2 text-sm rounded-lg transition-all duration-200 min-h-[40px] flex flex-col items-center justify-center
+                            ${isSelected 
+                              ? 'bg-blue-600 text-white font-medium border-2 border-blue-700' 
+                              : isSelectable
+                                ? 'bg-white text-gray-700 hover:bg-blue-50 hover:border-blue-300 border border-gray-200'
+                                : 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
+                            }
+                            ${!isCurrentMonthDate ? 'opacity-50' : ''}
+                          `}
+                        >
+                          <span className="text-xs font-medium">{getDayName(date)}</span>
+                          <span className="text-xs font-bold">{date.getDate()}</span>
+                          {isSelectable && (
+                            <span className="text-xs mt-1">🟢</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  
+                  {/* Seçili Tarih Bilgisi */}
+                  {formData.date && (
+                    <div className="mt-3 text-center">
+                      <p className="text-sm text-gray-600">
+                        Seçili Tarih: {new Date(formData.date + 'T00:00:00').toLocaleDateString('tr-TR', { 
+                          weekday: 'long', 
+                          year: 'numeric', 
+                          month: 'long', 
+                          day: 'numeric' 
+                        })}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {/* Açıklama */}
+                  <div className="mt-3 text-center text-xs text-gray-500">
+                    <p>🟢 Çalışma günü | 🔴 Kapalı gün</p>
+                    <p className="mt-1">Sadece çalışma günlerinde randevu alabilirsiniz</p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Saat Seçimi */}
@@ -205,26 +421,42 @@ export default function NewAppointmentPage() {
               <label htmlFor="time" className="block text-sm font-medium text-gray-700 mb-2">
                 Saat *
               </label>
-              <select
-                id="time"
-                name="time"
-                value={formData.time}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 outline-none"
-                required
-              >
-                <option value="">Saat seçin</option>
-                <option value="09:00">09:00</option>
-                <option value="10:00">10:00</option>
-                <option value="11:00">11:00</option>
-                <option value="12:00">12:00</option>
-                <option value="13:00">13:00</option>
-                <option value="14:00">14:00</option>
-                <option value="15:00">15:00</option>
-                <option value="16:00">16:00</option>
-                <option value="17:00">17:00</option>
-                <option value="18:00">18:00</option>
-              </select>
+              
+              {loadingSlots ? (
+                <div className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-500">
+                  Müsait saatler yükleniyor...
+                </div>
+              ) : availableSlots.length > 0 ? (
+                <div className="grid grid-cols-3 gap-2">
+                  {availableSlots.map((slot) => (
+                    <button
+                      key={slot.time}
+                      type="button"
+                      onClick={() => setFormData({...formData, time: slot.time})}
+                      className={`p-3 text-sm font-medium rounded-lg border transition-all duration-200 ${
+                        formData.time === slot.time
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : slot.available
+                            ? 'bg-white text-gray-700 border-gray-300 hover:border-blue-500 hover:bg-blue-50'
+                            : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                      }`}
+                      disabled={!slot.available}
+                    >
+                      {slot.time}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-500">
+                  {businessHours ? 'Bu tarihte müsait saat yok' : 'Önce tarih seçin'}
+                </div>
+              )}
+              
+              {businessHours && (
+                <p className="mt-2 text-sm text-gray-600">
+                  Çalışma saatleri: {businessHours.open} - {businessHours.close}
+                </p>
+              )}
             </div>
 
             {/* Notlar */}
