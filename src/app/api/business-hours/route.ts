@@ -18,7 +18,15 @@ export async function GET(request: NextRequest) {
     
     // Çalışma saatlerini getir
     const hours = await db.all(`
-      SELECT * FROM business_hours 
+      SELECT 
+        id,
+        business_id,
+        day_of_week,
+        open_time,
+        close_time,
+        is_working_day,
+        slot_duration
+      FROM business_hours 
       WHERE business_id = ? 
       ORDER BY day_of_week, open_time
     `, [businessId]);

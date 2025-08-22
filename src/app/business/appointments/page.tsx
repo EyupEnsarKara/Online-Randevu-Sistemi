@@ -12,6 +12,7 @@ type BusinessAppointment = {
 	created_at: string;
 	customer_name?: string;
 	customer_email?: string;
+	slot_duration?: number; // Added for slot duration
 };
 
 const turkishMonths = [
@@ -270,7 +271,14 @@ export default function BusinessAppointmentsCalendarPage() {
 					<div className="bg-white rounded-2xl shadow-xl p-6">
 						<div className="flex items-center justify-between mb-4">
 							<h2 className="text-lg font-semibold text-gray-900">Günlük Randevular</h2>
-							<div className="text-sm text-gray-500">{new Date(selectedDate).toLocaleDateString('tr-TR', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+							<div className="text-sm text-gray-500">
+								{new Date(selectedDate).toLocaleDateString('tr-TR', { year: 'numeric', month: 'long', day: 'numeric' })}
+								{dayAppointments.length > 0 && (
+									<span className="ml-2 text-blue-600">
+										(Slot: {dayAppointments[0]?.slot_duration || 30}dk)
+									</span>
+								)}
+							</div>
 						</div>
 
 						{loading ? (

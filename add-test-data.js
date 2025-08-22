@@ -1,10 +1,18 @@
 #!/usr/bin/env node
 
-import { openDb } from './src/lib/sqlite.js';
+import { open } from 'sqlite';
+import sqlite3 from 'sqlite3';
 import bcrypt from 'bcrypt';
 
 console.log('🧪 Test Verisi Ekleniyor...');
 console.log('==========================\n');
+
+async function openDb() {
+  return await open({
+    filename: './sqlite.db',
+    driver: sqlite3.Database
+  });
+}
 
 async function addTestData() {
   const db = await openDb();
@@ -63,7 +71,7 @@ async function addTestData() {
       businessId.id, 
       today, 
       '14:00', 
-      'confirmed', 
+      'approved', 
       'Saç kesimi ve boya'
     ]);
     
@@ -91,29 +99,40 @@ async function addTestData() {
     
     for (const day of workingDays) {
       await db.run(`
-        INSERT INTO business_hours (business_id, day_of_week, open_time, close_time, is_working_day)
-        VALUES (?, ?, ?, ?, ?)
-      `, [businessId.id, day, '09:00', '18:00', 1]);
+        INSERT INTO business_hours (business_id, day_of_week, open_time, close_time, is_working_day, slot_duration)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `, [businessId.id, day, '09:00', '18:00', 1, 30]);
     }
     
     console.log('✅ Test çalışma saatleri oluşturuldu\n');
 
-    // 5. Sonuçları göster
-    console.log('📊 Test Verisi Özeti:');
-    console.log('   👤 Kullanıcılar: 2 (1 müşteri, 1 işletme)');
-    console.log('   🏢 İşletmeler: 1');
-    console.log('   📅 Randevular: 2 (1 onaylı, 1 bekleyen)');
-    console.log('   🕐 Çalışma Saatleri: 6 gün (Pazartesi-Cumartesi)\n');
+    // 5. Test çalışma saatleri detayları
+    console.log('5️⃣ Test çalışma saatleri detayları...');
     
-    console.log('🔑 Test Giriş Bilgileri:');
+    // Farklı slot duration'lar ile test
+    await db.run(`
+      UPDATE business_hours 
+      SET slot_duration = ? 
+      WHERE business_id = ? AND day_of_week = ?
+    `, [45, businessId.id, 2]); // Salı günü 45dk slot
+    
+    await db.run(`
+      UPDATE business_hours 
+      SET slot_duration = ? 
+      WHERE business_id = ? AND day_of_week = ?
+    `, [60, businessId.id, 3]); // Çarşamba günü 60dk slot
+    
+    console.log('✅ Test çalışma saatleri detayları güncellendi\n');
+
+    console.log('🎉 Tüm test verileri başarıyla eklendi!');
+    console.log('\n📋 Test Hesapları:');
     console.log('   Müşteri: ahmet@test.com / 123456');
-    console.log('   İşletme: ayse@test.com / 123456\n');
-    
-    console.log('🎉 Test verisi başarıyla eklendi!');
-    console.log('📝 http://localhost:3000 adresinden test edebilirsiniz.');
+    console.log('   İşletme: ayse@test.com / 123456');
+    console.log('\n🔧 İşletme ayarları sayfasından çalışma saatleri ve slot duration ayarlayabilirsiniz.');
     
   } catch (error) {
     console.error('❌ Test verisi eklenirken hata oluştu:', error.message);
+    process.exit(1);
   } finally {
     await db.close();
   }

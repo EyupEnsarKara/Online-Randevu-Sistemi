@@ -43,17 +43,18 @@ export async function GET(request: NextRequest) {
 
     await db.close();
 
-    // Müsait saatleri hesapla (30 dakikalık aralıklarla)
+    // Müsait saatleri hesapla (slot_duration dakikalık aralıklarla)
     const availableSlots = [];
     const startTime = businessHours.open_time;
     const endTime = businessHours.close_time;
+    const slotDuration = businessHours.slot_duration || 30; // Varsayılan 30 dakika
     
     // Başlangıç ve bitiş saatlerini dakikaya çevir
     const startMinutes = timeToMinutes(startTime);
     const endMinutes = timeToMinutes(endTime);
     
-    // 30 dakikalık aralıklarla slot'ları oluştur
-    for (let minutes = startMinutes; minutes < endMinutes; minutes += 30) {
+    // Slot duration dakikalık aralıklarla slot'ları oluştur
+    for (let minutes = startMinutes; minutes < endMinutes; minutes += slotDuration) {
       const timeSlot = minutesToTime(minutes);
       
       // Bu saatte randevu var mı kontrol et
@@ -77,7 +78,8 @@ export async function GET(request: NextRequest) {
       available_slots: availableSlots,
       business_hours: {
         open: startTime,
-        close: endTime
+        close: endTime,
+        slot_duration: slotDuration
       }
     });
 

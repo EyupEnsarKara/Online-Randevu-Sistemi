@@ -455,6 +455,11 @@ export default function NewAppointmentPage() {
               {businessHours && (
                 <p className="mt-2 text-sm text-gray-600">
                   Çalışma saatleri: {businessHours.open} - {businessHours.close}
+                  {businessHours.slot_duration && (
+                    <span className="ml-2 text-blue-600">
+                      (Randevu arası: {businessHours.slot_duration} dakika)
+                    </span>
+                  )}
                 </p>
               )}
             </div>

@@ -8,6 +8,7 @@ interface WorkingHours {
   open: string;
   close: string;
   isOpen: boolean;
+  slotDuration: number;
 }
 
 export default function BusinessSettingsPage() {
@@ -17,14 +18,16 @@ export default function BusinessSettingsPage() {
   const [message, setMessage] = useState('');
   
   const [workingHours, setWorkingHours] = useState<WorkingHours[]>([
-    { day: 'Pazartesi', open: '09:00', close: '18:00', isOpen: true },
-    { day: 'Salı', open: '09:00', close: '18:00', isOpen: true },
-    { day: 'Çarşamba', open: '09:00', close: '18:00', isOpen: true },
-    { day: 'Perşembe', open: '09:00', close: '18:00', isOpen: true },
-    { day: 'Cuma', open: '09:00', close: '18:00', isOpen: true },
-    { day: 'Cumartesi', open: '09:00', close: '16:00', isOpen: true },
-    { day: 'Pazar', open: '10:00', close: '16:00', isOpen: false }
+    { day: 'Pazartesi', open: '09:00', close: '18:00', isOpen: true, slotDuration: 30 },
+    { day: 'Salı', open: '09:00', close: '18:00', isOpen: true, slotDuration: 30 },
+    { day: 'Çarşamba', open: '09:00', close: '18:00', isOpen: true, slotDuration: 30 },
+    { day: 'Perşembe', open: '09:00', close: '18:00', isOpen: true, slotDuration: 30 },
+    { day: 'Cuma', open: '09:00', close: '18:00', isOpen: true, slotDuration: 30 },
+    { day: 'Cumartesi', open: '09:00', close: '16:00', isOpen: true, slotDuration: 30 },
+    { day: 'Pazar', open: '10:00', close: '16:00', isOpen: false, slotDuration: 30 }
   ]);
+
+  const [globalSlotDuration, setGlobalSlotDuration] = useState(30);
 
   useEffect(() => {
     fetchSettings();
@@ -41,6 +44,11 @@ export default function BusinessSettingsPage() {
         if (data.success) {
           if (data.settings.workingHours) {
             setWorkingHours(data.settings.workingHours);
+            // Global slot duration'ı ilk açık günün slot duration'ından al
+            const firstOpenDay = data.settings.workingHours.find((day: WorkingHours) => day.isOpen);
+            if (firstOpenDay) {
+              setGlobalSlotDuration(firstOpenDay.slotDuration);
+            }
           }
         }
       }
@@ -54,6 +62,16 @@ export default function BusinessSettingsPage() {
   const handleWorkingHoursChange = (index: number, field: keyof WorkingHours, value: any) => {
     const updatedHours = [...workingHours];
     updatedHours[index] = { ...updatedHours[index], [field]: value };
+    setWorkingHours(updatedHours);
+  };
+
+  const handleGlobalSlotDurationChange = (value: number) => {
+    setGlobalSlotDuration(value);
+    // Tüm açık günlerin slot duration'ını güncelle
+    const updatedHours = workingHours.map(day => ({
+      ...day,
+      slotDuration: day.isOpen ? value : day.slotDuration
+    }));
     setWorkingHours(updatedHours);
   };
 
@@ -129,7 +147,7 @@ export default function BusinessSettingsPage() {
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">İşletme Ayarları</h1>
-            <p className="text-gray-600 mt-2">Çalışma saatlerinizi yönetin</p>
+            <p className="text-gray-600 mt-2">Çalışma saatlerinizi ve randevu ayarlarınızı yönetin</p>
           </div>
 
           {message && (
@@ -141,6 +159,32 @@ export default function BusinessSettingsPage() {
               {message}
             </div>
           )}
+
+          {/* Global Slot Duration Section */}
+          <div className="mb-8 p-6 bg-blue-50 rounded-xl border border-blue-200">
+            <h3 className="text-lg font-semibold text-blue-900 mb-4">Genel Randevu Ayarları</h3>
+            <div className="flex items-center space-x-4">
+              <label htmlFor="slotDuration" className="text-sm font-medium text-blue-800">
+                Randevu Arası Süre:
+              </label>
+              <select
+                id="slotDuration"
+                value={globalSlotDuration}
+                onChange={(e) => handleGlobalSlotDurationChange(Number(e.target.value))}
+                className="px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+              >
+                <option value={15}>15 dakika</option>
+                <option value={30}>30 dakika</option>
+                <option value={45}>45 dakika</option>
+                <option value={60}>1 saat</option>
+                <option value={90}>1.5 saat</option>
+                <option value={120}>2 saat</option>
+              </select>
+              <span className="text-sm text-blue-600">
+                Bu ayar tüm açık günler için geçerli olacaktır
+              </span>
+            </div>
+          </div>
 
           {/* Working Hours Section */}
           <div className="space-y-6">
@@ -175,6 +219,21 @@ export default function BusinessSettingsPage() {
                         onChange={(e) => handleWorkingHoursChange(index, 'close', e.target.value)}
                         className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       />
+                      <div className="flex items-center space-x-2 ml-4">
+                        <span className="text-sm text-gray-600">Slot:</span>
+                        <select
+                          value={day.slotDuration}
+                          onChange={(e) => handleWorkingHoursChange(index, 'slotDuration', Number(e.target.value))}
+                          className="px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value={15}>15dk</option>
+                          <option value={30}>30dk</option>
+                          <option value={45}>45dk</option>
+                          <option value={60}>1s</option>
+                          <option value={90}>1.5s</option>
+                          <option value={120}>2s</option>
+                        </select>
+                      </div>
                     </>
                   )}
                 </div>

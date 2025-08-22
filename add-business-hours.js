@@ -1,9 +1,17 @@
 #!/usr/bin/env node
 
-import { openDb } from './src/lib/sqlite.js';
+import { open } from 'sqlite';
+import sqlite3 from 'sqlite3';
 
 console.log('🕐 Çalışma Saatleri Ekleniyor...');
 console.log('================================\n');
+
+async function openDb() {
+  return await open({
+    filename: './sqlite.db',
+    driver: sqlite3.Database
+  });
+}
 
 async function addBusinessHours() {
   const db = await openDb();
@@ -32,16 +40,17 @@ async function addBusinessHours() {
     
     for (const day of workingDays) {
       await db.run(`
-        INSERT INTO business_hours (business_id, day_of_week, open_time, close_time, is_working_day)
-        VALUES (?, ?, ?, ?, ?)
-      `, [business.id, day, '09:00', '18:00', 1]);
+        INSERT INTO business_hours (business_id, day_of_week, open_time, close_time, is_working_day, slot_duration)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `, [business.id, day, '09:00', '18:00', 1, 30]);
       
-      const dayNames = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
-      console.log(`   ✅ ${dayNames[day]}: 09:00 - 18:00`);
+      const dayNames = ['Pazar', 'Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+      console.log(`   ✅ ${dayNames[day]}: 09:00 - 18:00 (Slot: 30dk)`);
     }
     
     console.log('\n🎉 Çalışma saatleri başarıyla eklendi!');
-    console.log('📝 Artık randevu oluştururken çalışma saatleri dikkate alınacak.');
+    console.log('📝 Artık randevu oluştururken çalışma saatleri ve slot duration dikkate alınacak.');
+    console.log('🔧 İşletme ayarları sayfasından slot duration\'ları özelleştirebilirsiniz.');
     
   } catch (error) {
     console.error('❌ Çalışma saatleri eklenirken hata oluştu:', error.message);

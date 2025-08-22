@@ -63,9 +63,11 @@ export async function GET(
           a.created_at,
           b.name as business_name,
           b.address as business_address,
-          b.phone as business_phone
+          b.phone as business_phone,
+          bh.slot_duration
         FROM appointments a
         JOIN businesses b ON a.business_id = b.id
+        LEFT JOIN business_hours bh ON b.id = bh.business_id AND bh.day_of_week = (strftime('%w', a.date))
         WHERE a.id = ? AND a.customer_id = ?
       `, [appointmentId, user.id]);
     } else {
@@ -88,9 +90,11 @@ export async function GET(
           a.notes,
           a.created_at,
           u.name as customer_name,
-          u.email as customer_email
+          u.email as customer_email,
+          bh.slot_duration
         FROM appointments a
         JOIN users u ON a.customer_id = u.id
+        LEFT JOIN business_hours bh ON a.business_id = bh.business_id AND bh.day_of_week = (strftime('%w', a.date))
         WHERE a.id = ? AND a.business_id = ?
       `, [appointmentId, business.id]);
     }

@@ -95,6 +95,7 @@ export async function runMigrations(): Promise<void> {
             open_time TEXT NOT NULL,
             close_time TEXT NOT NULL,
             is_working_day BOOLEAN DEFAULT 1,
+            slot_duration INTEGER DEFAULT 30,
             FOREIGN KEY (business_id) REFERENCES businesses (id) ON DELETE CASCADE
           )
         `
@@ -104,6 +105,12 @@ export async function runMigrations(): Promise<void> {
         sql: `
           CREATE INDEX IF NOT EXISTS idx_business_hours_business_id ON business_hours (business_id);
           CREATE INDEX IF NOT EXISTS idx_business_hours_day_time ON business_hours (day_of_week, open_time, close_time);
+        `
+      },
+      {
+        name: '007_add_slot_duration_to_business_hours',
+        sql: `
+          ALTER TABLE business_hours ADD COLUMN slot_duration INTEGER DEFAULT 30;
         `
       }
     ];

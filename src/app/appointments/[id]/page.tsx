@@ -15,6 +15,7 @@ interface Appointment {
   business_phone?: string;
   customer_name?: string;
   customer_email?: string;
+  slot_duration?: number;
 }
 
 export default function AppointmentDetailPage() {
@@ -208,6 +209,11 @@ export default function AppointmentDetailPage() {
                 <dt className="text-sm font-medium text-gray-500">Saat</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
                   {appointment.time}
+                  {appointment.slot_duration && (
+                    <span className="ml-2 text-blue-600">
+                      (Slot: {appointment.slot_duration} dakika)
+                    </span>
+                  )}
                 </dd>
               </div>
               {appointment.business_name && (
@@ -305,12 +311,8 @@ export default function AppointmentDetailPage() {
                {appointment.status === 'approved' && (
                  <button
                    onClick={() => updateAppointmentStatus('cancelled')}
-                   disabled={updatingStatus || appointment.status === 'cancelled'}
-                   className={`px-4 py-2 rounded-md text-sm font-medium ${
-                     appointment.status === 'cancelled'
-                       ? 'bg-gray-100 text-gray-800 cursor-not-allowed'
-                       : 'bg-gray-600 text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500'
-                   }`}
+                   disabled={updatingStatus}
+                   className="px-4 py-2 rounded-md text-sm font-medium bg-gray-600 text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
                  >
                    {updatingStatus ? 'Güncelleniyor...' : 'İptal Et'}
                  </button>

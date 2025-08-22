@@ -54,11 +54,25 @@ export async function GET(request: NextRequest) {
           tables: tableSchemas
         });
 
+      case 'business-hours':
+        // Business hours test
+        const db2 = await openDb();
+        const businessHoursTest = await db2.all(`
+          SELECT * FROM business_hours 
+          ORDER BY business_id, day_of_week
+        `);
+        await db2.close();
+        
+        return NextResponse.json({
+          success: true,
+          business_hours: businessHoursTest
+        });
+
       default:
         return NextResponse.json({
           success: true,
           message: 'SQLite test endpoint',
-          availableActions: ['migrate', 'test', 'stats', 'tables'],
+          availableActions: ['migrate', 'test', 'stats', 'tables', 'business-hours'],
           usage: 'Add ?action=action_name to test different functions'
         });
     }
