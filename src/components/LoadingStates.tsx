@@ -59,3 +59,4 @@ export const CardSkeleton: React.FC = () => (
     </div>
   </div>
 );
+
