@@ -143,7 +143,7 @@ export default function AppointmentsPage() {
       {allAppointments.map((appointment) => (
         <div key={appointment.id} className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden">
           {/* Kart Başlığı */}
-          <div className="bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-4 text-white">
+          <div className="bg-blue-500 px-6 py-4 text-white">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <span className="text-2xl">{getStatusIcon(appointment.status)}</span>
