@@ -27,7 +27,7 @@ async function addTestData() {
     await db.run(`
       INSERT INTO users (name, email, password, user_type) 
       VALUES (?, ?, ?, ?)
-    `, ['Ahmet Yılmaz', 'ahmet@test.com', hashedPassword, 'customer']);
+    `, ['Ahmet Yılmaz', 'musteri@test.com', hashedPassword, 'customer']);
     
     console.log('✅ 1 müşteri kullanıcısı oluşturuldu\n');
 
@@ -76,7 +76,7 @@ async function addTestData() {
     // 3. Test randevuları oluştur
     console.log('3️⃣ Test randevuları oluşturuluyor...');
     
-    const customerUserId = await db.get('SELECT id FROM users WHERE email = ?', ['ahmet@test.com']);
+    const customerUserId = await db.get('SELECT id FROM users WHERE email = ?', ['musteri@test.com']);
     const barberBusinessId = await db.get('SELECT id FROM businesses WHERE user_id = ?', [barberUserId.id]);
     const dentistBusinessId = await db.get('SELECT id FROM businesses WHERE user_id = ?', [dentistUserId.id]);
     
@@ -155,7 +155,7 @@ async function addTestData() {
 
     console.log('🎉 Tüm test verileri başarıyla eklendi!');
     console.log('\n📋 Test Hesapları:');
-    console.log('   Müşteri:  ahmet@test.com   / 123456');
+    console.log('   Müşteri:  musteri@test.com / 123456');
     console.log('   Kuaför:   kuafor@test.com  / 123456');
     console.log('   Diş:      dis@test.com     / 123456');
     console.log('\n🔧 İşletme ayarları sayfasından çalışma saatleri ve randevu süresi ayarlayabilirsiniz.');
