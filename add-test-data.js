@@ -27,7 +27,7 @@ async function addTestData() {
     await db.run(`
       INSERT INTO users (name, email, password, user_type) 
       VALUES (?, ?, ?, ?)
-    `, ['Ahmet Yılmaz', 'musteri@test.com', hashedPassword, 'customer']);
+    `, ['musteri', 'musteri@test.com', hashedPassword, 'customer']);
     
     console.log('✅ 1 müşteri kullanıcısı oluşturuldu\n');
 
