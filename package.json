@@ -10,8 +10,6 @@
     "lint": "next lint",
     "setup-db": "node setup-database.js",
     "add-test-data": "node add-test-data.js",
-    "add-business-hours": "node add-business-hours.js",
-    "test-business-hours": "node test-business-hours.js"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.6",
