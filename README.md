@@ -1,137 +1,71 @@
 # Online Randevu Sistemi
 
-Modern ve kullanıcı dostu online randevu yönetim sistemi.
+Modern, Next.js tabanlı bir online randevu yönetim uygulaması. Müşteriler işletmelerden randevu alır, işletmeler ise çalışma saatlerini ve randevuları yönetir.
 
-## 🚀 Özellikler
+## 🚀 Özellikler (Özet)
 
-### Müşteriler için:
-- İşletmelerden randevu alma
-- Randevu geçmişi görüntüleme
-- Randevu iptal etme
-- İşletme arama ve filtreleme
+- Müşteriler: İşletme arama, uygun saatleri görme, randevu oluşturma/iptal
+- İşletmeler: Randevu onay/ret, çalışma saatleri ve randevu süresi yönetimi
+- Dinamik uygun saat hesaplama (günlük randevu süreleriyle entegre)
 
-### İşletmeler için:
-- Randevu taleplerini onaylama/reddetme
-- Takvim görünümünde randevu yönetimi
-- Çalışma saatleri ayarlama
-- **YENİ: Randevu arası süre ayarlama (15dk, 30dk, 45dk, 1s, 1.5s, 2s)**
-- **YENİ: Günlük slot duration yönetimi**
+## 🧰 Teknoloji Yığını
 
-## 🛠️ Teknolojiler
+- Next.js 15, React 19, TypeScript, Tailwind CSS
+- API Routes ile backend, SQLite veritabanı
+- Kimlik doğrulama: JWT, şifreleme: bcrypt
 
-- **Frontend**: Next.js 15, React 19, TypeScript, Tailwind CSS
-- **Backend**: Next.js API Routes
-- **Veritabanı**: SQLite
-- **Kimlik Doğrulama**: JWT
-- **Şifreleme**: bcrypt
+## ⚙️ Hızlı Başlangıç
 
-## 📦 Kurulum
-
-1. **Bağımlılıkları yükleyin:**
+1) Bağımlılıklar
 ```bash
 npm install
 ```
 
-2. **Veritabanını kurun:**
+2) Veritabanı kurulumu
 ```bash
 npm run setup-db
 ```
 
-3. **Test verilerini ekleyin (isteğe bağlı):**
+3) (İsteğe bağlı) Örnek veriler
 ```bash
 npm run add-test-data
 ```
 
-4. **Geliştirme sunucusunu başlatın:**
+4) Geliştirme sunucusu
 ```bash
 npm run dev
 ```
 
-## 🔧 Yeni Özellikler
+## 🔐 Ortam Değişkenleri (.env)
 
-### Slot Duration Yönetimi
-İşletmeler artık her gün için farklı randevu arası süreleri ayarlayabilir:
+Projenin çalışması için aşağıdaki değişkenleri ayarlayın. Next.js için tercihen `.env.local` dosyasını kullanın.
 
-- **Genel Ayar**: Tüm açık günler için tek seferde slot duration ayarlama
-- **Günlük Ayar**: Her gün için ayrı slot duration belirleme
-- **Desteklenen Süreler**: 15dk, 30dk, 45dk, 1s, 1.5s, 2s
+```env
+# Zorunlu
+JWT_SECRET_KEY=super-gizli-ve-uzun-bir-anahtar-örn-64+karakter
 
-### Çalışma Saatleri Yönetimi
-- Her gün için açık/kapalı durumu
-- Başlangıç ve bitiş saatleri
-- Slot duration ile entegre çalışma
-
-## 🗄️ Veritabanı Şeması
-
-### business_hours tablosu
-```sql
-CREATE TABLE business_hours (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  business_id INTEGER NOT NULL,
-  day_of_week INTEGER NOT NULL, -- 0=Pazar, 1=Pazartesi, ...
-  open_time TEXT NOT NULL,
-  close_time TEXT NOT NULL,
-  is_working_day BOOLEAN DEFAULT 1,
-  slot_duration INTEGER DEFAULT 30, -- dakika cinsinden
-  FOREIGN KEY (business_id) REFERENCES businesses (id) ON DELETE CASCADE
-);
+# Opsiyonel
+# PORT=3000
 ```
 
-## 🔄 Migration
 
-Yeni özellikler için veritabanı migration'ı:
+## 📄 Önemli Sayfalar ve API Uçları
 
-```bash
-# Test endpoint üzerinden migration çalıştırma
-curl "http://localhost:3000/api/test-sqlite?action=migrate"
+- Sayfalar: `/businesses`, `/appointments/new`, `/business/settings`, `/profile`
+- API: `/api/available-slots`, `/api/appointments`, `/api/business-hours`, `/api/businesses`
 
-# Veritabanı durumunu kontrol etme
-curl "http://localhost:3000/api/test-sqlite?action=stats"
+## 📜 Komutlar (Scripts)
 
-# Business hours tablosunu kontrol etme
-curl "http://localhost:3000/api/test-sqlite?action=business-hours"
-```
-
-## 📱 Kullanım
-
-### İşletme Ayarları
-1. `/business/settings` sayfasına gidin
-2. Genel slot duration ayarlayın
-3. Her gün için çalışma saatleri ve slot duration belirleyin
-4. Ayarları kaydedin
-
-### Randevu Alma
-1. `/appointments/new` sayfasına gidin
-2. İşletme seçin
-3. Tarih seçin (sadece çalışma günleri)
-4. Müsait saatlerden birini seçin (slot duration'a göre hesaplanır)
-5. Randevuyu oluşturun
-
-## 🧪 Test
-
-Sistem test edildi ve şu özellikler çalışıyor:
-
-- ✅ Çalışma saatleri kaydetme
-- ✅ Slot duration ayarlama
-- ✅ Randevu slot'ları hesaplama
-- ✅ Günlük slot duration yönetimi
-- ✅ Veritabanı entegrasyonu
+- `npm run setup-db`: SQLite kurulum
+- `npm run add-test-data`: Örnek veri ekleme
+- `npm run add-business-hours`: Örnek çalışma saatleri
+- `npm run test-business-hours`: Slot hesap testleri
 
 ## 📝 Notlar
 
-- Slot duration değişiklikleri mevcut randevuları etkilemez
-- Çalışma saatleri değişiklikleri anında yansır
-- Sistem 24 saat formatında çalışır
-- Tarih formatı: YYYY-MM-DD
-
-## 🤝 Katkıda Bulunma
-
-1. Fork yapın
-2. Feature branch oluşturun (`git checkout -b feature/amazing-feature`)
-3. Commit yapın (`git commit -m 'Add amazing feature'`)
-4. Push yapın (`git push origin feature/amazing-feature`)
-5. Pull Request oluşturun
+- Çalışma saatleri ve slot süresi (15–120 dk) günlük bazda yönetilebilir
+- Randevu uygunlukları bu ayarlara göre gerçek zamanlı hesaplanır
 
 ## 📄 Lisans
 
-Bu proje MIT lisansı altında lisanslanmıştır.
+MIT

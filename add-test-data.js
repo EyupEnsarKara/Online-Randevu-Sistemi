@@ -29,82 +29,111 @@ async function addTestData() {
       VALUES (?, ?, ?, ?)
     `, ['Ahmet Yılmaz', 'ahmet@test.com', hashedPassword, 'customer']);
     
-    // İşletme kullanıcısı
-    await db.run(`
-      INSERT INTO users (name, email, password, user_type) 
-      VALUES (?, ?, ?, ?)
-    `, ['Ayşe Kaya', 'ayse@test.com', hashedPassword, 'business']);
-    
-    console.log('✅ 2 test kullanıcısı oluşturuldu\n');
+    console.log('✅ 1 müşteri kullanıcısı oluşturuldu\n');
 
     // 2. Test işletmesi oluştur
-    console.log('2️⃣ Test işletmesi oluşturuluyor...');
-    
-    const businessUserId = await db.get('SELECT id FROM users WHERE email = ?', ['ayse@test.com']);
-    
+    console.log('2️⃣ Test işletmeleri oluşturuluyor...');
+
+    // Ek: Erkek Kuaförü kullanıcısı ve işletmesi
+    const barberHashedPassword = hashedPassword; // aynı şifre
     await db.run(`
-      INSERT INTO businesses (user_id, name, description, address, phone) 
+      INSERT INTO users (name, email, password, user_type)
+      VALUES (?, ?, ?, ?)
+    `, ['Berk Demir', 'kuafor@test.com', barberHashedPassword, 'business']);
+
+    const barberUserId = await db.get('SELECT id FROM users WHERE email = ?', ['kuafor@test.com']);
+    await db.run(`
+      INSERT INTO businesses (user_id, name, description, address, phone)
       VALUES (?, ?, ?, ?, ?)
     `, [
-      businessUserId.id, 
-      'Güzellik Salonu', 
-      'Profesyonel saç ve makyaj hizmetleri', 
-      'İstanbul, Kadıköy, Moda Caddesi No:123', 
-      '0216 555 0123'
+      barberUserId.id,
+      'Erkek Kuaförü',
+      'Saç kesimi, sakal tıraşı ve bakım hizmetleri',
+      'İstanbul, Beşiktaş, Barbaros Blv. No:45',
+      '0212 444 0090'
     ]);
-    
-    console.log('✅ Test işletmesi oluşturuldu\n');
+    console.log('✅ Erkek Kuaförü oluşturuldu');
+
+    // Ek: Diş Kliniği kullanıcısı ve işletmesi
+    await db.run(`
+      INSERT INTO users (name, email, password, user_type)
+      VALUES (?, ?, ?, ?)
+    `, ['Deniz Aydın', 'dis@test.com', hashedPassword, 'business']);
+
+    const dentistUserId = await db.get('SELECT id FROM users WHERE email = ?', ['dis@test.com']);
+    await db.run(`
+      INSERT INTO businesses (user_id, name, description, address, phone)
+      VALUES (?, ?, ?, ?, ?)
+    `, [
+      dentistUserId.id,
+      'Diş Kliniği',
+      'Genel diş hekimliği, dolgu, kanal tedavisi ve diş taşı temizliği',
+      'Ankara, Çankaya, Atatürk Blv. No:210',
+      '0312 555 0020'
+    ]);
+    console.log('✅ Diş Kliniği oluşturuldu\n');
 
     // 3. Test randevuları oluştur
     console.log('3️⃣ Test randevuları oluşturuluyor...');
     
     const customerUserId = await db.get('SELECT id FROM users WHERE email = ?', ['ahmet@test.com']);
-    const businessId = await db.get('SELECT id FROM businesses WHERE user_id = ?', [businessUserId.id]);
+    const barberBusinessId = await db.get('SELECT id FROM businesses WHERE user_id = ?', [barberUserId.id]);
+    const dentistBusinessId = await db.get('SELECT id FROM businesses WHERE user_id = ?', [dentistUserId.id]);
     
-    // Bugün için randevu
-    const today = new Date().toISOString().split('T')[0];
+    // Erkek Kuaförü için randevu (yarından sonraki gün)
+    const dayAfterTomorrow = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     await db.run(`
-      INSERT INTO appointments (customer_id, business_id, date, time, status, notes) 
+      INSERT INTO appointments (customer_id, business_id, date, time, status, notes)
       VALUES (?, ?, ?, ?, ?, ?)
     `, [
-      customerUserId.id, 
-      businessId.id, 
-      today, 
-      '14:00', 
-      'approved', 
-      'Saç kesimi ve boya'
+      customerUserId.id,
+      barberBusinessId.id,
+      dayAfterTomorrow,
+      '13:30',
+      'pending',
+      'Saç kesimi'
     ]);
-    
-    // Yarın için randevu
-    const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    // Diş Kliniği için randevu (3 gün sonrası)
+    const threeDaysLater = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     await db.run(`
-      INSERT INTO appointments (customer_id, business_id, date, time, status, notes) 
+      INSERT INTO appointments (customer_id, business_id, date, time, status, notes)
       VALUES (?, ?, ?, ?, ?, ?)
     `, [
-      customerUserId.id, 
-      businessId.id, 
-      tomorrow, 
-      '16:00', 
-      'pending', 
-      'Makyaj'
+      customerUserId.id,
+      dentistBusinessId.id,
+      threeDaysLater,
+      '10:00',
+      'pending',
+      'Kontrol ve diş taşı temizliği'
     ]);
-    
+
     console.log('✅ 2 test randevusu oluşturuldu\n');
 
     // 4. Test çalışma saatleri oluştur
     console.log('4️⃣ Test çalışma saatleri oluşturuluyor...');
     
-    // Güzellik salonu için çalışma saatleri (Pazartesi-Cumartesi, 09:00-18:00)
-    const workingDays = [1, 2, 3, 4, 5, 6]; // Pazartesi-Cumartesi
-    
-    for (const day of workingDays) {
+    // (Güzellik Salonu kaldırıldı)
+
+    // Erkek Kuaförü için çalışma saatleri (Salı-Pazar, 10:00-20:00)
+    const barberWorkingDays = [2, 3, 4, 5, 6, 0]; // Salı-Pazar (0=Pazar)
+    for (const day of barberWorkingDays) {
       await db.run(`
         INSERT INTO business_hours (business_id, day_of_week, open_time, close_time, is_working_day, slot_duration)
         VALUES (?, ?, ?, ?, ?, ?)
-      `, [businessId.id, day, '09:00', '18:00', 1, 30]);
+      `, [barberBusinessId.id, day, '10:00', '20:00', 1, 30]);
     }
-    
-    console.log('✅ Test çalışma saatleri oluşturuldu\n');
+    console.log('✅ Erkek Kuaförü çalışma saatleri oluşturuldu');
+
+    // Diş Kliniği için çalışma saatleri (Pazartesi-Cuma, 09:00-17:00)
+    const dentistWorkingDays = [1, 2, 3, 4, 5];
+    for (const day of dentistWorkingDays) {
+      await db.run(`
+        INSERT INTO business_hours (business_id, day_of_week, open_time, close_time, is_working_day, slot_duration)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `, [dentistBusinessId.id, day, '09:00', '17:00', 1, 60]);
+    }
+    console.log('✅ Diş Kliniği çalışma saatleri oluşturuldu\n');
 
     // 5. Test çalışma saatleri detayları
     console.log('5️⃣ Test çalışma saatleri detayları...');
@@ -114,21 +143,22 @@ async function addTestData() {
       UPDATE business_hours 
       SET slot_duration = ? 
       WHERE business_id = ? AND day_of_week = ?
-    `, [45, businessId.id, 2]); // Salı günü 45dk slot
+    `, [45, barberBusinessId.id, 2]); // Kuaför: Salı 45dk
     
     await db.run(`
       UPDATE business_hours 
       SET slot_duration = ? 
       WHERE business_id = ? AND day_of_week = ?
-    `, [60, businessId.id, 3]); // Çarşamba günü 60dk slot
+    `, [60, dentistBusinessId.id, 3]); // Diş: Çarşamba 60dk
     
     console.log('✅ Test çalışma saatleri detayları güncellendi\n');
 
     console.log('🎉 Tüm test verileri başarıyla eklendi!');
     console.log('\n📋 Test Hesapları:');
-    console.log('   Müşteri: ahmet@test.com / 123456');
-    console.log('   İşletme: ayse@test.com / 123456');
-    console.log('\n🔧 İşletme ayarları sayfasından çalışma saatleri ve slot duration ayarlayabilirsiniz.');
+    console.log('   Müşteri:  ahmet@test.com   / 123456');
+    console.log('   Kuaför:   kuafor@test.com  / 123456');
+    console.log('   Diş:      dis@test.com     / 123456');
+    console.log('\n🔧 İşletme ayarları sayfasından çalışma saatleri ve randevu süresi ayarlayabilirsiniz.');
     
   } catch (error) {
     console.error('❌ Test verisi eklenirken hata oluştu:', error.message);
