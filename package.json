@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "setup-db": "node setup-database.js",
-    "add-test-data": "node add-test-data.js",
+    "add-test-data": "node add-test-data.js"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.6",
