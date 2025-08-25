@@ -77,12 +77,6 @@ JWT_SECRET_KEY=super-gizli-ve-uzun-bir-anahtar-örn-64+karakter
 - Sayfalar: `/businesses`, `/appointments/new`, `/business/settings`, `/profile`
 - API: `/api/available-slots`, `/api/appointments`, `/api/business-hours`, `/api/businesses`
 
-## 📜 Komutlar (Scripts)
-
-- `npm run setup-db`: SQLite kurulum
-- `npm run add-test-data`: Örnek veri ekleme
-- `npm run add-business-hours`: Örnek çalışma saatleri
-- `npm run test-business-hours`: Slot hesap testleri
 
 ## 📝 Notlar
 
